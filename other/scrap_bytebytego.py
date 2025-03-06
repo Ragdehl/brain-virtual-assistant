@@ -5,7 +5,9 @@ from markdownify import markdownify
 from typing import List, Optional
 import ssl
 import certifi
+import time
 from urllib.parse import urljoin
+from urllib.parse import urlparse
 
 # 🖥️ Selenium Imports for JavaScript-Rendered Pages
 from selenium import webdriver
@@ -24,6 +26,7 @@ COOKIES = {
 
 BASE_URL = "https://blog.bytebytego.com/archive"
 OUTPUT_DIR = "bytebytego_newsletters"
+REQUEST_DELAY = 5  # ⏳ Delay (in seconds) between requests to avoid being blocked
 
 # 🛠️ Function to Initialize Selenium WebDriver (for JavaScript-rendered pages)
 def get_selenium_driver():
@@ -52,11 +55,11 @@ def get_newsletter_links() -> List[str]:
     soup = BeautifulSoup(response.text, "html.parser")
     
     # 🏗️ Extract Newsletter Links (Update Selector Based on Page Structure)
-    links = [
-        urljoin(BASE_URL, a["href"])  # Ensure absolute URLs
+    links = list(set(
+        clean_url(urljoin(BASE_URL, a["href"]))  # Ensure absolute URLs and clean them
         for a in soup.find_all("a", href=True)  # Grab all anchor tags with href
         if "bytebytego.com/p/" in a["href"]  # Filter for newsletter links
-    ]
+    ))
     
     if not links:
         print("⚠️ No links found with `requests`. Trying Selenium...")
@@ -84,7 +87,7 @@ def get_newsletter_links_selenium() -> List[str]:
     
     # Extract and filter newsletter links
     links = [
-        urljoin(BASE_URL, el.get_attribute("href"))
+        clean_url(urljoin(BASE_URL, el.get_attribute("href")))
         for el in elements
         if el.get_attribute("href") and "bytebytego.com/p/" in el.get_attribute("href")
     ]
@@ -98,6 +101,22 @@ def get_newsletter_links_selenium() -> List[str]:
 
     return links
 
+# 🔗 Function to Clean Newsletter URLs (Remove Extra Paths Like `/comments`)
+def clean_url(url: str) -> str:
+    """
+    Removes unnecessary path segments from a URL (e.g., `/comments` at the end).
+    
+    Args:
+        url (str): The original URL.
+
+    Returns:
+        str: The cleaned URL.
+    """
+    parsed = urlparse(url)
+    cleaned_path = "/".join(parsed.path.split("/")[:3])  # Keep only the first 3 segments
+    cleaned_url = f"{parsed.scheme}://{parsed.netloc}{cleaned_path}"
+    return cleaned_url
+
 # 📥 Function to Download a Newsletter
 def download_newsletter(url: str) -> None:
     """
@@ -106,6 +125,8 @@ def download_newsletter(url: str) -> None:
     Args:
         url (str): The URL of the newsletter to download.
     """
+    print(f"📥 Downloading: {url}")
+
     response = SESSION.get(url, cookies=COOKIES)
     if response.status_code != 200:
         print(f"⚠️ Failed to fetch newsletter: {url}")
@@ -151,6 +172,8 @@ def main() -> None:
 
     for link in links:
         download_newsletter(link)
+        
+        time.sleep(REQUEST_DELAY)  # ⏳ Add delay to prevent being blocked
 
 if __name__ == "__main__":
     main()
