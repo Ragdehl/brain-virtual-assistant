@@ -8,6 +8,7 @@ import certifi
 import time
 from urllib.parse import urljoin
 from urllib.parse import urlparse
+import random
 
 # 🖥️ Selenium Imports for JavaScript-Rendered Pages
 from selenium import webdriver
@@ -28,7 +29,7 @@ BASE_URL = "https://blog.bytebytego.com/archive"
 OUTPUT_DIR = "bytebytego_newsletters"
 REQUEST_DELAY = 5  # ⏳ Delay (in seconds) between requests to avoid being blocked
 
-# 🛠️ Function to Initialize Selenium WebDriver (for JavaScript-rendered pages)
+# 🛠️ Function to Initialize Selenium WebDriver
 def get_selenium_driver():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")  # Run Chrome in headless mode (no UI)
@@ -36,51 +37,31 @@ def get_selenium_driver():
     options.add_argument("--disable-dev-shm-usage")
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-# 🔍 Function to Scrape Newsletter Links
-def get_newsletter_links() -> List[str]:
-    """
-    Scrape the ByteByteGo newsletter archive page for newsletter URLs.
-
-    Returns:
-        List[str]: A list of URLs to individual newsletter pages.
-    """
-    response = SESSION.get(BASE_URL, cookies=COOKIES)
-
-    # 🛑 Check if the request failed (may indicate a JavaScript-rendered page)
-    if response.status_code != 200 or not response.text:
-        print(f"⚠️ Failed to fetch archive page with requests ({response.status_code}), trying Selenium...")
-        return get_newsletter_links_selenium()
-
-    # 🌐 Parse HTML with BeautifulSoup
-    soup = BeautifulSoup(response.text, "html.parser")
-    
-    # 🏗️ Extract Newsletter Links (Update Selector Based on Page Structure)
-    links = list(set(
-        clean_url(urljoin(BASE_URL, a["href"]))  # Ensure absolute URLs and clean them
-        for a in soup.find_all("a", href=True)  # Grab all anchor tags with href
-        if "bytebytego.com/p/" in a["href"]  # Filter for newsletter links
-    ))
-    
-    if not links:
-        print("⚠️ No links found with `requests`. Trying Selenium...")
-        return get_newsletter_links_selenium()
-
-    print(f"✅ Found {len(links)} newsletters using `requests`.")
-    return links
-
-# 🔍 Alternative Function: Use Selenium If JavaScript is Required
+# 🔍 Function to Scroll & Load All Newsletter Links
 def get_newsletter_links_selenium() -> List[str]:
     """
-    Use Selenium to scrape newsletter links from a JavaScript-rendered page.
-
+    Use Selenium to scroll and load all newsletter links dynamically.
+    
     Returns:
-        List[str]: A list of newsletter URLs.
+        List[str]: A list of URLs to individual newsletter pages.
     """
     driver = get_selenium_driver()
     driver.get(BASE_URL)
 
-    # Wait for the page to load (adjust sleep if necessary)
-    driver.implicitly_wait(5)
+    # Simulate scrolling to load more content
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")  # Scroll to bottom
+        time.sleep(2)  # Wait for new content to load
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        
+        if new_height == last_height:  # Stop if no new content loads
+            break
+        
+        last_height = new_height
+
+    print("✅ Finished scrolling. Extracting links...")
 
     # Extract all `<a>` elements
     elements = driver.find_elements(By.TAG_NAME, "a")
@@ -101,7 +82,7 @@ def get_newsletter_links_selenium() -> List[str]:
 
     return links
 
-# 🔗 Function to Clean Newsletter URLs (Remove Extra Paths Like `/comments`)
+# 🔗 Function to Clean Newsletter URLs (Remove `/comments` or similar)
 def clean_url(url: str) -> str:
     """
     Removes unnecessary path segments from a URL (e.g., `/comments` at the end).
@@ -119,11 +100,14 @@ def clean_url(url: str) -> str:
 
 # 📥 Function to Download a Newsletter
 def download_newsletter(url: str) -> None:
-    """
-    Download and convert a newsletter to Markdown format.
+    """Download and convert a newsletter to Markdown format.
 
     Args:
         url (str): The URL of the newsletter to download.
+
+    The function saves the newsletter as a Markdown file in the OUTPUT_DIR directory.
+    The filename includes both the newsletter's title and the last segment of the URL
+    for better identification and to prevent filename collisions.
     """
     print(f"📥 Downloading: {url}")
 
@@ -140,7 +124,12 @@ def download_newsletter(url: str) -> None:
         print(f"⚠️ No title found for {url}. Skipping.")
         return
 
-    title = title_element.get_text(strip=True).replace(" ", "_") + ".md"
+    # Extract the last part of the URL for the filename
+    url_slug = url.rstrip('/').split('/')[-1]
+    
+    # Combine title and URL slug for the filename
+    title_text = title_element.get_text(strip=True).replace(" ", "_")
+    filename = f"{title_text}_{url_slug}.md"
 
     # 📌 Extract Content
     content = soup.find("article") or soup.find("div", class_="newsletter-content")
@@ -152,28 +141,37 @@ def download_newsletter(url: str) -> None:
     md_content = markdownify(str(content))
 
     # Save to File
-    with open(os.path.join(OUTPUT_DIR, title), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUTPUT_DIR, filename), "w", encoding="utf-8") as f:
         f.write(md_content)
     
-    print(f"✅ Saved: {title}")
+    print(f"✅ Saved: {filename}")
 
 # 🚀 Main Function to Download All Newsletters
 def main() -> None:
+    """Download all ByteByteGo newsletters from the archive.
+    
+    Creates the output directory if it doesn't exist, then iterates through
+    all newsletter links to download and save each newsletter as a Markdown file.
+    A random delay between requests is added to avoid overwhelming the server.
     """
-    Download all ByteByteGo newsletters from the archive.
-    """
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    # Create output directory if it doesn't exist
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    links = get_newsletter_links()
-    if not links:
-        print("❌ No newsletter links found. Exiting.")
-        return
+    # Get all newsletter links
+    links = get_newsletter_links_selenium()
+    print(f"🔍 Found {len(links)} newsletters")
 
-    for link in links:
+    # Download each newsletter
+    for i, link in enumerate(links):
         download_newsletter(link)
         
-        time.sleep(REQUEST_DELAY)  # ⏳ Add delay to prevent being blocked
+        # Add a random delay between requests (between 2 and 7 seconds)
+        if i < len(links) - 1:  # No need to wait after the last request
+            delay = random.uniform(2, 7)
+            print(f"⏱️ Waiting {delay:.2f} seconds before next request...")
+            time.sleep(delay)
+
+    print("✨ All newsletters downloaded!")
 
 if __name__ == "__main__":
     main()
