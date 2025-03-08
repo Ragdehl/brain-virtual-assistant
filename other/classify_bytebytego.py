@@ -10,7 +10,7 @@ nltk.download('punkt_tab')
 
 # 🔹 Define Source and Destination Folders
 SOURCE_FOLDER = "C:/Users/edgar/OneDrive/Documents/Obsidian/Personal Obsidian/Bytebytego"
-DEST_FOLDER = "C:/Users/edgar/OneDrive/Documents/Obsidian/Personal Obsidian/Bytebytego/categories"
+DEST_FOLDER = "C:/Users/edgar/OneDrive/Documents/Obsidian/Personal Obsidian/Bytebytego/"
 
 # 🔹 Define Categories and Subcategories with Keywords
 CATEGORIES = {
@@ -34,7 +34,7 @@ CATEGORIES = {
         "Development_Methodologies": ["agile", "scrum", "devops", "tdd", "bdd", "software development"]
     },
     "Networking": {
-        "Protocols": ["tcp/ip", "udp", "http", "https", "dns", "grpc"],
+        "Protocols": ["protocol"],
         "Performance": ["latency", "throughput", "bandwidth", "congestion control", "network optimization"]
     },
     "Cloud_Computing": {
@@ -53,11 +53,6 @@ CATEGORIES = {
 
 # 🔹 Ensure Category and Subcategory Folders Exist
 os.makedirs(DEST_FOLDER, exist_ok=True)
-for category, subcategories in CATEGORIES.items():
-    category_path = os.path.join(DEST_FOLDER, category)
-    os.makedirs(category_path, exist_ok=True)
-    for subcategory in subcategories:
-        os.makedirs(os.path.join(category_path, subcategory), exist_ok=True)
 
 # Create "Uncategorized" Folder for Unmatched Files
 UNCATEGORIZED_FOLDER = os.path.join(DEST_FOLDER, "Uncategorized")
@@ -68,7 +63,7 @@ ps = PorterStemmer()
 def classify_file(file_path: str) -> Tuple[str, str]:
     """
     Reads a Markdown file and determines its category and subcategory based on keyword frequency.
-    Uses stemming to account for plurals and verb conjugations.
+    Words in the filename/title have a higher weight than those in the content.
 
     Args:
         file_path (str): Path to the Markdown file.
@@ -83,8 +78,12 @@ def classify_file(file_path: str) -> Tuple[str, str]:
         print(f"⚠️ Error reading {file_path}: {e}")
         return ("Uncategorized", "Uncategorized")
     
+    filename = os.path.basename(file_path).lower()
     words = word_tokenize(content)
+    title_words = word_tokenize(filename.replace(".md", ""))
+    
     stemmed_words = [ps.stem(word) for word in words]
+    stemmed_title_words = [ps.stem(word) for word in title_words]
     
     category_scores = Counter()
     
@@ -92,7 +91,8 @@ def classify_file(file_path: str) -> Tuple[str, str]:
         for subcategory, keywords in subcategories.items():
             for keyword in keywords:
                 stemmed_keyword = ps.stem(keyword)
-                category_scores[(category, subcategory)] += stemmed_words.count(stemmed_keyword)
+                category_scores[(category, subcategory)] += (stemmed_words.count(stemmed_keyword))
+                category_scores[(category, subcategory)] += (stemmed_title_words.count(stemmed_keyword) * 8)  # Title words have higher weight
     
     if category_scores:
         best_match = sorted(category_scores.items(), key=lambda x: (-x[1], x[0][0]))[0][0]  # Highest count, then alphabetically
@@ -101,33 +101,32 @@ def classify_file(file_path: str) -> Tuple[str, str]:
     return ("Uncategorized", "Uncategorized")
 
 # 🔹 Process Each Markdown File
-for filename in os.listdir(SOURCE_FOLDER):
-    if filename.endswith(".md"):  # Only process Markdown files
-        file_path = os.path.join(SOURCE_FOLDER, filename)
-        try:
-            category, subcategory = classify_file(file_path)
-            destination_folder = os.path.join(DEST_FOLDER, category, subcategory)
-            os.makedirs(destination_folder, exist_ok=True)
-            shutil.move(file_path, os.path.join(destination_folder, filename))
-            print(f"✅ Moved '{filename}' → {destination_folder}")
-        except Exception as e:
-            print(f"⚠️ Error processing {filename}: {e}")
+for root, _, files in os.walk(SOURCE_FOLDER):
+    for filename in files:
+        if filename.endswith(".md"):  # Only process Markdown files
+            file_path = os.path.join(root, filename)
+            try:
+                category, subcategory = classify_file(file_path)
+                destination_folder = os.path.join(DEST_FOLDER, category, subcategory)
+                os.makedirs(destination_folder, exist_ok=True)
+                shutil.move(file_path, os.path.join(destination_folder, filename))
+                print(f"✅ Moved '{filename}' → {destination_folder}")
+            except Exception as e:
+                print(f"⚠️ Error processing {filename}: {e}")
 
 # 🔥 Remove Empty Folders
-for category in os.listdir(DEST_FOLDER):
-    category_path = os.path.join(DEST_FOLDER, category)
-    if os.path.isdir(category_path):
-        for subcategory in os.listdir(category_path):
-            subcategory_path = os.path.join(category_path, subcategory)
-            if os.path.isdir(subcategory_path) and not os.listdir(subcategory_path):
+def remove_empty_folders(directory: str):
+    """ Recursively removes empty folders. """
+    for root, dirs, _ in os.walk(directory, topdown=False):
+        for dir_name in dirs:
+            dir_path = os.path.join(root, dir_name)
+            if not os.listdir(dir_path):
                 try:
-                    shutil.rmtree(subcategory_path)
+                    os.rmdir(dir_path)
+                    print(f"🗑️ Removed empty folder: {dir_path}")
                 except PermissionError:
-                    print(f"⚠️ Could not remove {subcategory_path}, check permissions.")
-        if not os.listdir(category_path):
-            try:
-                shutil.rmtree(category_path)
-            except PermissionError:
-                print(f"⚠️ Could not remove {category_path}, check permissions.")
+                    print(f"⚠️ Could not remove {dir_path}, check permissions.")
+
+remove_empty_folders(DEST_FOLDER)
 
 print("✨ All files classified and organized!")

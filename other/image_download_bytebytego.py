@@ -27,6 +27,7 @@ def download_image(img_url: str, save_path: str) -> str:
         response = requests.get(img_url, stream=True)
         if response.status_code == 200:
             filename = os.path.join(save_path, os.path.basename(img_url))
+            os.makedirs(os.path.dirname(filename), exist_ok=True)  # Ensure directory exists
             with open(filename, 'wb') as img_file:
                 for chunk in response.iter_content(1024):
                     img_file.write(chunk)
@@ -51,7 +52,9 @@ def update_markdown_images(file_path: str) -> None:
         updated_content = content
         for img in soup.find_all("img"):
             img_url = img["src"]
-            local_path = download_image(img_url, IMAGE_FOLDER)
+            relative_path = os.path.relpath(file_path, SOURCE_FOLDER)
+            local_folder = os.path.join(IMAGE_FOLDER, os.path.dirname(relative_path))
+            local_path = download_image(img_url, local_folder)
             if local_path:
                 updated_content = updated_content.replace(img_url, local_path)
         
@@ -60,14 +63,24 @@ def update_markdown_images(file_path: str) -> None:
     except Exception as e:
         print(f"⚠️ Error updating images in {file_path}: {e}")
 
-# 🔹 Process Each Markdown File
-for filename in os.listdir(SOURCE_FOLDER):
-    if filename.endswith(".md"):  # Only process Markdown files
-        file_path = os.path.join(SOURCE_FOLDER, filename)
-        try:
-            update_markdown_images(file_path)
-            print(f"✅ Updated images in '{filename}'")
-        except Exception as e:
-            print(f"⚠️ Error processing {filename}: {e}")
+def process_markdown_files(root_folder: str):
+    """
+    Recursively processes all markdown files in the given root folder.
+
+    Args:
+        root_folder (str): The root directory containing markdown files.
+    """
+    for root, _, files in os.walk(root_folder):
+        for filename in files:
+            if filename.endswith(".md"):  # Only process Markdown files
+                file_path = os.path.join(root, filename)
+                try:
+                    update_markdown_images(file_path)
+                    print(f"✅ Updated images in '{file_path}'")
+                except Exception as e:
+                    print(f"⚠️ Error processing {file_path}: {e}")
+
+# 🔹 Start processing all markdown files in SOURCE_FOLDER
+process_markdown_files(SOURCE_FOLDER)
 
 print("✨ All images downloaded and markdown updated!")
