@@ -76,8 +76,12 @@ def classify_file(file_path: str) -> Tuple[str, str]:
     Returns:
         Tuple[str, str]: The determined category and subcategory, or ("Uncategorized", "Uncategorized") if no match is found.
     """
-    with open(file_path, "r", encoding="utf-8") as file:
-        content = file.read().lower()
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read().lower()
+    except Exception as e:
+        print(f"⚠️ Error reading {file_path}: {e}")
+        return ("Uncategorized", "Uncategorized")
     
     words = word_tokenize(content)
     stemmed_words = [ps.stem(word) for word in words]
@@ -100,12 +104,14 @@ def classify_file(file_path: str) -> Tuple[str, str]:
 for filename in os.listdir(SOURCE_FOLDER):
     if filename.endswith(".md"):  # Only process Markdown files
         file_path = os.path.join(SOURCE_FOLDER, filename)
-        category, subcategory = classify_file(file_path)
-
-        # 🔄 Move File to Appropriate Category/Subcategory Folder
-        destination_folder = os.path.join(DEST_FOLDER, category, subcategory)
-        shutil.move(file_path, os.path.join(destination_folder, filename))
-        print(f"✅ Moved '{filename}' → {destination_folder}")
+        try:
+            category, subcategory = classify_file(file_path)
+            destination_folder = os.path.join(DEST_FOLDER, category, subcategory)
+            os.makedirs(destination_folder, exist_ok=True)
+            shutil.move(file_path, os.path.join(destination_folder, filename))
+            print(f"✅ Moved '{filename}' → {destination_folder}")
+        except Exception as e:
+            print(f"⚠️ Error processing {filename}: {e}")
 
 # 🔥 Remove Empty Folders
 for category in os.listdir(DEST_FOLDER):
@@ -114,8 +120,14 @@ for category in os.listdir(DEST_FOLDER):
         for subcategory in os.listdir(category_path):
             subcategory_path = os.path.join(category_path, subcategory)
             if os.path.isdir(subcategory_path) and not os.listdir(subcategory_path):
-                os.rmdir(subcategory_path)
+                try:
+                    shutil.rmtree(subcategory_path)
+                except PermissionError:
+                    print(f"⚠️ Could not remove {subcategory_path}, check permissions.")
         if not os.listdir(category_path):
-            os.rmdir(category_path)
+            try:
+                shutil.rmtree(category_path)
+            except PermissionError:
+                print(f"⚠️ Could not remove {category_path}, check permissions.")
 
 print("✨ All files classified and organized!")
