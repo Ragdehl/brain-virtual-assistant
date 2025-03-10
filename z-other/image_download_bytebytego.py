@@ -2,7 +2,7 @@ import os
 import time
 import random
 import requests
-from bs4 import BeautifulSoup
+import re
 
 # 🔹 Define Source and Destination Folders
 SOURCE_FOLDER = "C:/Users/edgar/OneDrive/Documents/Obsidian/Personal Obsidian/Bytebytego"
@@ -47,11 +47,10 @@ def update_markdown_images(file_path: str) -> None:
         with open(file_path, "r", encoding="utf-8") as file:
             content = file.read()
         
-        soup = BeautifulSoup(content, "html.parser")
-        
         updated_content = content
-        for img in soup.find_all("img"):
-            img_url = img["src"]
+        image_links = re.findall(r'!\[.*?\]\((https?://[^)]+)\)', content)
+        
+        for img_url in image_links:
             relative_path = os.path.relpath(file_path, SOURCE_FOLDER)
             local_folder = os.path.join(IMAGE_FOLDER, os.path.dirname(relative_path))
             local_path = download_image(img_url, local_folder)

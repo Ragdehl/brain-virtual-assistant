@@ -1,0 +1,14 @@
+# Serverless Framework configuration for obsidian-ai-assistant
+service: obsidian-ai-assistant
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    DYNAMODB_TABLE: ${self:service}-notes-${opt:stage, self:provider.stage}
+    S3_BUCKET: ${self:service}-notes-${opt:stage, self:provider.stage}
+    OPENSEARCH_DOMAIN: ${self:service}-search-${opt:stage, self:provider.stage}
+    BEDROCK_MODEL_ID: amazon.titan-embed-text-v1
+
+# Define functions, resources, and layers here 

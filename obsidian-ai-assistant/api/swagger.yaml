@@ -1,0 +1,352 @@
+openapi: 3.0.0
+info:
+  title: Obsidian AI Assistant API
+  description: API for the Obsidian AI Assistant note-taking platform
+  version: 1.0.0
+  contact:
+    email: support@example.com
+servers:
+  - url: https://api.obsidian-ai-assistant.com/v1
+    description: Production server
+  - url: https://dev-api.obsidian-ai-assistant.com/v1
+    description: Development server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    Note:
+      type: object
+      required:
+        - id
+        - title
+        - content
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the note
+        title:
+          type: string
+          description: Title of the note
+        content:
+          type: string
+          description: Content of the note in Markdown format
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags associated with the note
+        createdAt:
+          type: integer
+          format: int64
+          description: Unix timestamp when the note was created
+        updatedAt:
+          type: integer
+          format: int64
+          description: Unix timestamp when the note was last updated
+        s3Key:
+          type: string
+          description: S3 key where the note content is stored
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /notes:
+    get:
+      summary: List all notes
+      description: Returns a list of all notes for the authenticated user
+      operationId: listNotes
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of notes to return
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: nextToken
+          in: query
+          description: Token for pagination
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of notes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Note'
+                  nextToken:
+                    type: string
+                    description: Token for pagination
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a new note
+      description: Creates a new note
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+              properties:
+                title:
+                  type: string
+                  description: Title of the note
+                content:
+                  type: string
+                  description: Content of the note in Markdown format
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags associated with the note
+      responses:
+        '201':
+          description: Note created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notes/{id}:
+    get:
+      summary: Get a note by ID
+      description: Returns a single note by ID
+      operationId: getNoteById
+      parameters:
+        - name: id
+          in: path
+          description: ID of the note to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A note
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a note
+      description: Updates an existing note
+      operationId: updateNote
+      parameters:
+        - name: id
+          in: path
+          description: ID of the note to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Title of the note
+                content:
+                  type: string
+                  description: Content of the note in Markdown format
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags associated with the note
+      responses:
+        '200':
+          description: Note updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a note
+      description: Deletes a note
+      operationId: deleteNote
+      parameters:
+        - name: id
+          in: path
+          description: ID of the note to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Note deleted successfully
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notes/search:
+    get:
+      summary: Search notes
+      description: Searches notes based on a query string or semantic search
+      operationId: searchNotes
+      parameters:
+        - name: q
+          in: query
+          description: Search query
+          required: true
+          schema:
+            type: string
+        - name: semantic
+          in: query
+          description: Whether to perform semantic search
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - name: limit
+          in: query
+          description: Maximum number of notes to return
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 
