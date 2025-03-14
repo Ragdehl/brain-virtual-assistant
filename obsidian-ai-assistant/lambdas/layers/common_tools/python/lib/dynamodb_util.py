@@ -3,7 +3,7 @@ DynamoDB utility functions for Lambda functions.
 """
 import os
 import uuid
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -237,4 +237,4 @@ class DynamoDBUtil:
         Returns:
             str: Unique ID
         """
-        return str(uuid.uuid4()) 
+        return str(uuid.uuid4())

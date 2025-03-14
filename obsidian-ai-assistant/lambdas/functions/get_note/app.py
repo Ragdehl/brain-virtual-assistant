@@ -4,19 +4,18 @@ Lambda function for retrieving a note.
 import os
 from typing import Any, Dict
 
-import boto3
 from botocore.exceptions import ClientError
 
 # Import common utilities
 from common_tools import (
+    DynamoDBUtil,
+    S3Util,
+    log_error,
     log_event,
     log_response,
-    log_error,
-    success_response,
     not_found_error,
     server_error,
-    DynamoDBUtil,
-    S3Util
+    success_response,
 )
 
 # Initialize AWS clients
@@ -91,4 +90,4 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     except Exception as e:
         # Log the error
         log_error(e, context)
-        return server_error("Error retrieving note") 
+        return server_error("Error retrieving note")

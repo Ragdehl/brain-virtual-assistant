@@ -215,4 +215,4 @@ class S3Util:
             response = self.s3.copy_object(**copy_args)
             return response
         except ClientError:
-            raise 
+            raise

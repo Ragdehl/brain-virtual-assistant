@@ -15,7 +15,7 @@ def log_request(event: Dict[str, Any]) -> None:
     """
     # Create a sanitized copy of the event to avoid logging sensitive data
     sanitized_event = event.copy()
-    
+
     # Remove sensitive headers
     if "headers" in sanitized_event:
         headers = sanitized_event["headers"].copy()
@@ -24,7 +24,7 @@ def log_request(event: Dict[str, Any]) -> None:
             if header in headers:
                 headers[header] = "[REDACTED]"
         sanitized_event["headers"] = headers
-    
+
     logger.info(f"API Request: {json.dumps(sanitized_event, indent=2)}")
 
 def get_config(param_name: str, default: Optional[Any] = None) -> Any:
@@ -77,28 +77,28 @@ def parse_query_params(params: Optional[Dict[str, str]]) -> Dict[str, Any]:
     """
     if not params:
         return {}
-        
+
     result = {}
-    
+
     # Parse pagination parameters
     if 'limit' in params:
         try:
             result['limit'] = min(int(params['limit']), 100)  # Max 100 items per page
         except ValueError:
             result['limit'] = 10  # Default limit
-    
+
     if 'cursor' in params:
         result['cursor'] = sanitize_string(params['cursor'])
-    
+
     # Parse search parameters
     if 'query' in params:
         result['query'] = sanitize_string(params['query'])
-    
+
     if 'tags' in params:
         result['tags'] = [
             sanitize_string(tag.strip())
             for tag in params['tags'].split(',')
             if tag.strip()
         ]
-    
-    return result 
+
+    return result

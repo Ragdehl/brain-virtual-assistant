@@ -1,8 +1,8 @@
-import os
-import jwt
 import logging
 from datetime import datetime
+
 import boto3
+import jwt
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger()
@@ -27,13 +27,13 @@ def get_api_key(api_key):
             Name=parameter_name,
             WithDecryption=True
         )
-        
+
         # Parameter value should be JSON string containing user info
         user_info = jwt.decode(
             response['Parameter']['Value'],
             options={"verify_signature": False}
         )
-        
+
         return user_info
     except ClientError as e:
         if e.response['Error']['Code'] == 'ParameterNotFound':
@@ -59,18 +59,18 @@ def authenticate(headers):
         auth_header = headers.get('Authorization', '')
         if auth_header.startswith('Bearer '):
             api_key = auth_header.split(' ')[1]
-    
+
     if not api_key:
         return None
-        
+
     # Validate API key and get user info
     user_info = get_api_key(api_key)
     if not user_info:
         return None
-        
+
     # Check if API key is expired
     expiry = user_info.get('exp')
     if expiry and datetime.fromtimestamp(expiry) < datetime.utcnow():
         return None
-        
-    return user_info 
+
+    return user_info

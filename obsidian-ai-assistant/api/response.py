@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict, Optional, Union
 
+
 def _create_response(status_code: int, body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Create a standardized API Gateway response.
     
@@ -18,10 +19,10 @@ def _create_response(status_code: int, body: Dict[str, Any], headers: Optional[D
         "Access-Control-Allow-Headers": "Content-Type,X-Api-Key,Authorization",
         "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PUT,DELETE"
     }
-    
+
     if headers:
         default_headers.update(headers)
-    
+
     return {
         "statusCode": status_code,
         "headers": default_headers,
@@ -42,12 +43,12 @@ def success_response(status_code: int = 200, data: Optional[Any] = None, message
     body = {
         "success": True
     }
-    
+
     if data is not None:
         body["data"] = data
     if message:
         body["message"] = message
-        
+
     return _create_response(status_code, body)
 
 def error_response(
@@ -73,12 +74,12 @@ def error_response(
             "message": message
         }
     }
-    
+
     if error_code:
         body["error"]["code"] = error_code
     if details:
         body["error"]["details"] = details
-        
+
     return _create_response(status_code, body)
 
 def validation_error(message: str, details: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -96,4 +97,4 @@ def validation_error(message: str, details: Optional[Dict[str, Any]] = None) -> 
         message,
         error_code="VALIDATION_ERROR",
         details=details
-    ) 
+    )

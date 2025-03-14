@@ -200,4 +200,4 @@ def validate_request_body(event: Dict[str, Any]) -> Tuple[bool, Optional[Dict[st
     if not body:
         return False, None, "Request body is required"
 
-    return validate_json_string(body) 
+    return validate_json_string(body)

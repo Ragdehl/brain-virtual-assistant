@@ -4,10 +4,9 @@ Tests for the list_notes Lambda function.
 import json
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import boto3
-import pytest
 from moto import mock_dynamodb
 
 # Import the Lambda handler
@@ -24,11 +23,11 @@ class TestListNotes(unittest.TestCase):
             "STAGE": "test"
         })
         self.env_patcher.start()
-        
+
         # Set up mock DynamoDB
         self.dynamodb_mock = mock_dynamodb()
         self.dynamodb_mock.start()
-        
+
         # Create the mock table
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         self.table = self.dynamodb.create_table(
@@ -54,7 +53,7 @@ class TestListNotes(unittest.TestCase):
             ],
             BillingMode="PAY_PER_REQUEST",
         )
-        
+
         # Add some test data
         self.user_id = "test-user-123"
         self.notes = [
@@ -72,7 +71,7 @@ class TestListNotes(unittest.TestCase):
             }
             for i in range(10)
         ]
-        
+
         for note in self.notes:
             self.table.put_item(Item=note)
 
@@ -94,13 +93,13 @@ class TestListNotes(unittest.TestCase):
             },
             "queryStringParameters": None
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 10)
@@ -122,29 +121,29 @@ class TestListNotes(unittest.TestCase):
                 "limit": "3"
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 3)
         self.assertIn("pagination", body)
         self.assertIsNotNone(body["pagination"]["nextToken"])
-        
+
         # Use the nextToken to get the next page
         next_token = body["pagination"]["nextToken"]
         event["queryStringParameters"]["nextToken"] = next_token
-        
+
         response = lambda_handler(event, {})
         body = json.loads(response["body"])
-        
+
         self.assertEqual(len(body["notes"]), 3)
         self.assertIsNotNone(body["pagination"]["nextToken"])
-        
+
         # Verify we get different notes in the second page
         first_page_ids = set(note["noteId"] for note in json.loads(response["body"])["notes"])
         second_page_ids = set(note["noteId"] for note in body["notes"])
@@ -161,13 +160,13 @@ class TestListNotes(unittest.TestCase):
             },
             "queryStringParameters": None
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 400)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
@@ -185,13 +184,13 @@ class TestListNotes(unittest.TestCase):
             },
             "queryStringParameters": None
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 0)
@@ -213,13 +212,13 @@ class TestListNotes(unittest.TestCase):
                 "tag": "tag-5"
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 1)
@@ -241,17 +240,17 @@ class TestListNotes(unittest.TestCase):
                 "toDate": "2023-05-07T23:59:59Z"
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 3)  # Notes 5, 6, 7
-        
+
         note_ids = [note["noteId"] for note in body["notes"]]
         self.assertIn("note-5", note_ids)
         self.assertIn("note-6", note_ids)
@@ -259,4 +258,4 @@ class TestListNotes(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

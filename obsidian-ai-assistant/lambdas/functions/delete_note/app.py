@@ -3,18 +3,13 @@ Lambda function for deleting a note.
 
 This function deletes a note and its associated content.
 """
-import json
 import os
+from typing import Any, Dict
+
 import boto3
-from typing import Dict, Any
 
 # Import shared models and utilities
-from lambdas.utils.response import (
-    format_response,
-    format_error,
-    format_validation_error,
-    format_not_found_error
-)
+from lambdas.utils.response import format_error, format_not_found_error, format_validation_error
 
 # Initialize AWS clients
 dynamodb = boto3.resource('dynamodb')
@@ -46,13 +41,13 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
             user_id = event['requestContext']['authorizer']['claims']['sub']
         except KeyError:
             return format_validation_error("Missing user ID in request context")
-        
+
         # Extract note ID from path parameters
         try:
             note_id = event['pathParameters']['noteId']
         except (KeyError, TypeError):
             return format_validation_error("Missing note ID in path parameters")
-        
+
         # Check if the note exists
         existing_note = table.get_item(
             Key={
@@ -60,10 +55,10 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
                 'noteId': note_id
             }
         ).get('Item')
-        
+
         if not existing_note:
             return format_not_found_error(f"Note with ID {note_id} not found")
-        
+
         # Delete the note from DynamoDB
         table.delete_item(
             Key={
@@ -71,14 +66,14 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
                 'noteId': note_id
             }
         )
-        
+
         # Delete the note content from S3
         try:
             s3.Object(bucket_name, f"{user_id}/{note_id}").delete()
         except Exception as e:
             # Log the error but continue with the deletion
             print(f"Error deleting note content from S3: {str(e)}")
-        
+
         # Return a success response with no content
         return {
             'statusCode': 204,
@@ -89,8 +84,8 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
             },
             'body': ''
         }
-        
+
     except Exception as e:
         # Log the error for debugging
         print(f"Error deleting note: {str(e)}")
-        return format_error(str(e)) 
+        return format_error(str(e))

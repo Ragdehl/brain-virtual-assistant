@@ -1,7 +1,7 @@
 """
 Request model for creating a note.
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 # JSON schema for note creation request
 CREATE_NOTE_SCHEMA = {
@@ -87,7 +87,7 @@ def validate_create_note_request(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Check for additional properties
     allowed_props = {"title", "content", "tags", "folder"}
-    additional_props = [prop for prop in data.keys() if prop not in allowed_props]
+    additional_props = [prop for prop in data if prop not in allowed_props]
     if additional_props:
         errors["additionalProperties"] = f"Unknown properties: {', '.join(additional_props)}"
 

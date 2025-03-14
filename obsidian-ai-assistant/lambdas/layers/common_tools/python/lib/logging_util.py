@@ -89,7 +89,7 @@ def log_response(response: Dict[str, Any]) -> None:
         response (dict): API Gateway response
     """
     status_code = response.get("statusCode", 0)
-    
+
     # Parse body if it's a string
     body = response.get("body", "{}")
     if isinstance(body, str):
@@ -130,4 +130,4 @@ def log_error(error: Exception, context: Optional[Any] = None) -> None:
     if context:
         log_entry["requestId"] = getattr(context, "aws_request_id", "UNKNOWN")
 
-    logger.error(f"Error: {json.dumps(log_entry)}", exc_info=True) 
+    logger.error(f"Error: {json.dumps(log_entry)}", exc_info=True)

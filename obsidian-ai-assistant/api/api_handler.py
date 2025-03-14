@@ -1,7 +1,8 @@
 import json
 import logging
+
 from auth import authenticate
-from response import success_response, error_response
+from response import error_response, success_response
 from utils import log_request
 
 # Configure logging
@@ -25,7 +26,7 @@ def lambda_handler(event, context):
     headers = event.get("headers", {})
     query_params = event.get("queryStringParameters", {}) or {}
     body = None
-    
+
     if event.get("body"):
         try:
             body = json.loads(event.get("body"))
@@ -41,7 +42,7 @@ def lambda_handler(event, context):
         # Routes for notes
         if path.startswith("/notes"):
             note_id = path.split("/")[-1] if len(path.split("/")) > 2 else None
-            
+
             if method == "POST" and not note_id:
                 return create_note(body, user)
             elif method == "GET":
@@ -53,17 +54,17 @@ def lambda_handler(event, context):
                 return update_note(note_id, body, user)
             elif method == "DELETE" and note_id:
                 return delete_note(note_id, user)
-        
+
         # Route for search
         elif path == "/search" and method == "GET":
             return search_notes(query_params, user)
-        
+
         # Health check endpoint
         elif path == "/health" and method == "GET":
             return success_response(200, {"status": "healthy"})
-        
+
         return error_response(404, "Not Found")
 
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}", exc_info=True)
-        return error_response(500, "Internal Server Error") 
+        return error_response(500, "Internal Server Error")

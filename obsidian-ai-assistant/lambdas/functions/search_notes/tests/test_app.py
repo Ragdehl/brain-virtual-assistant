@@ -4,10 +4,9 @@ Tests for the search_notes Lambda function.
 import json
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import boto3
-import pytest
 from moto import mock_dynamodb, mock_lambda
 
 # Import the Lambda handler
@@ -25,14 +24,14 @@ class TestSearchNotes(unittest.TestCase):
             "STAGE": "test"
         })
         self.env_patcher.start()
-        
+
         # Set up mock AWS services
         self.dynamodb_mock = mock_dynamodb()
         self.dynamodb_mock.start()
-        
+
         self.lambda_mock = mock_lambda()
         self.lambda_mock.start()
-        
+
         # Create the mock DynamoDB table
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         self.table = self.dynamodb.create_table(
@@ -58,7 +57,7 @@ class TestSearchNotes(unittest.TestCase):
             ],
             BillingMode="PAY_PER_REQUEST",
         )
-        
+
         # Create the mock Lambda function for embeddings
         self.lambda_client = boto3.client("lambda", region_name="us-east-1")
         self.lambda_client.create_function(
@@ -69,7 +68,7 @@ class TestSearchNotes(unittest.TestCase):
             Code={"ZipFile": b"def lambda_handler(event, context): return {'embeddings': [0.1, 0.2, 0.3]}"},
             Description="Mock embedding function",
         )
-        
+
         # Add test notes to DynamoDB
         self.user_id = "test-user-123"
         self.notes = [
@@ -134,10 +133,10 @@ class TestSearchNotes(unittest.TestCase):
                 "embeddings": [0.5, 0.6, 0.7]
             }
         ]
-        
+
         for note in self.notes:
             self.table.put_item(Item=note)
-        
+
         # Add a note for a different user
         self.table.put_item(Item={
             "userId": "different-user",
@@ -168,7 +167,7 @@ class TestSearchNotes(unittest.TestCase):
                 'embeddings': [0.4, 0.5, 0.6]
             }).encode()))
         }
-        
+
         # Create a mock API Gateway event
         event = {
             "requestContext": {
@@ -183,17 +182,17 @@ class TestSearchNotes(unittest.TestCase):
                 "searchType": "text"
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 2)  # Should find the two Python notes
-        
+
         # Verify the correct notes were found
         note_ids = [note["noteId"] for note in body["notes"]]
         self.assertIn("note-1", note_ids)
@@ -209,7 +208,7 @@ class TestSearchNotes(unittest.TestCase):
                 'embeddings': [0.4, 0.5, 0.6]
             }).encode()))
         }
-        
+
         # Create a mock API Gateway event
         event = {
             "requestContext": {
@@ -224,16 +223,16 @@ class TestSearchNotes(unittest.TestCase):
                 "searchType": "semantic"
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
-        
+
         # Since we're mocking the embeddings, we can't test the actual semantic search results
         # But we can verify that the function returns notes and doesn't error
         self.assertGreaterEqual(len(body["notes"]), 1)
@@ -252,13 +251,13 @@ class TestSearchNotes(unittest.TestCase):
                 "searchType": "text"
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 400)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
@@ -278,13 +277,13 @@ class TestSearchNotes(unittest.TestCase):
                 "searchType": "text"
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 400)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
@@ -305,13 +304,13 @@ class TestSearchNotes(unittest.TestCase):
                 "searchType": "invalid"
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 400)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
@@ -326,7 +325,7 @@ class TestSearchNotes(unittest.TestCase):
                 'embeddings': [0.4, 0.5, 0.6]
             }).encode()))
         }
-        
+
         # Create a mock API Gateway event with tag filter
         event = {
             "requestContext": {
@@ -342,13 +341,13 @@ class TestSearchNotes(unittest.TestCase):
                 "tags": ["react"]
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 1)  # Should find only the React note
@@ -364,7 +363,7 @@ class TestSearchNotes(unittest.TestCase):
                 'embeddings': [0.4, 0.5, 0.6]
             }).encode()))
         }
-        
+
         # Create a mock API Gateway event with date filter
         event = {
             "requestContext": {
@@ -381,21 +380,21 @@ class TestSearchNotes(unittest.TestCase):
                 "toDate": "2023-05-02T23:59:59Z"
             })
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 200)
-        
+
         body = json.loads(response["body"])
         self.assertIn("notes", body)
         self.assertEqual(len(body["notes"]), 2)  # Should find notes from May 1-2
-        
+
         note_ids = [note["noteId"] for note in body["notes"]]
         self.assertIn("note-1", note_ids)
         self.assertIn("note-2", note_ids)
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

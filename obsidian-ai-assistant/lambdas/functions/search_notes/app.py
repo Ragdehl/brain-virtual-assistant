@@ -5,19 +5,14 @@ This function supports both text-based and semantic search for notes.
 """
 import json
 import os
+from typing import Any, Dict, List, Optional
+
 import boto3
 import numpy as np
-from typing import Dict, Any, List, Optional
-from datetime import datetime
 
 # Import shared models and utilities
-from lambdas.models.error import ErrorResponse
-from lambdas.models.note import NoteResponse, SearchNotesRequest, NoteListResponse
-from lambdas.utils.response import (
-    format_response,
-    format_error,
-    format_validation_error
-)
+from lambdas.models.note import NoteListResponse, NoteResponse, SearchNotesRequest
+from lambdas.utils.response import format_error, format_response, format_validation_error
 
 # Initialize AWS clients
 dynamodb = boto3.resource('dynamodb')
@@ -48,23 +43,23 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
             user_id = event['requestContext']['authorizer']['claims']['sub']
         except KeyError:
             return format_validation_error("Missing user ID in request context")
-        
+
         # Parse request body
         try:
             if not event.get('body'):
                 return format_validation_error("Missing request body")
-            
+
             body = json.loads(event['body'])
             search_request = SearchNotesRequest(**body)
         except json.JSONDecodeError:
             return format_validation_error("Invalid JSON in request body")
         except Exception as e:
             return format_validation_error(f"Invalid request body: {str(e)}")
-        
+
         # Validate search type
         if search_request.searchType not in ['text', 'semantic']:
             return format_validation_error("Invalid search type. Must be 'text' or 'semantic'")
-        
+
         # Perform the search
         if search_request.searchType == 'text':
             notes = perform_text_search(
@@ -84,15 +79,15 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
                 search_request.toDate,
                 search_request.limit
             )
-        
+
         # Format the response
         note_list_response = NoteListResponse(
             notes=[NoteResponse.from_dynamodb_item(note) for note in notes],
             pagination={"nextToken": None}  # Pagination not supported for search yet
         )
-        
+
         return format_response(note_list_response.model_dump())
-        
+
     except Exception as e:
         # Log the error for debugging
         print(f"Error searching notes: {str(e)}")
@@ -128,37 +123,37 @@ def perform_text_search(
             ':userId': user_id
         }
     }
-    
+
     # Add query filter
     if query:
         # Search in title
         scan_params['FilterExpression'] += ' AND contains(title, :query)'
         scan_params['ExpressionAttributeValues'][':query'] = query
-    
+
     # Add tag filter
     if tags and len(tags) > 0:
         tag_filter_parts = []
         for i, tag in enumerate(tags):
             tag_filter_parts.append(f'contains(tags, :tag{i})')
             scan_params['ExpressionAttributeValues'][f':tag{i}'] = tag
-        
+
         tag_filter = ' AND '.join(tag_filter_parts)
         scan_params['FilterExpression'] += f' AND ({tag_filter})'
-    
+
     # Add date filter
     if from_date or to_date:
         if from_date:
             scan_params['FilterExpression'] += ' AND createdAt >= :fromDate'
             scan_params['ExpressionAttributeValues'][':fromDate'] = from_date
-        
+
         if to_date:
             scan_params['FilterExpression'] += ' AND createdAt <= :toDate'
             scan_params['ExpressionAttributeValues'][':toDate'] = to_date
-    
+
     # Scan the table
     response = table.scan(**scan_params)
     notes = response.get('Items', [])
-    
+
     # Sort by relevance (simple contains check for now)
     def relevance_score(note):
         score = 0
@@ -168,9 +163,9 @@ def perform_text_search(
             if query.lower() in tag.lower():
                 score += 5
         return score
-    
+
     notes.sort(key=relevance_score, reverse=True)
-    
+
     # Limit the results
     return notes[:limit]
 
@@ -199,7 +194,7 @@ def perform_semantic_search(
     """
     # Generate embeddings for the query
     query_embedding = generate_embeddings(query)
-    
+
     # Scan all notes for the user
     scan_params = {
         'FilterExpression': 'userId = :userId',
@@ -207,31 +202,31 @@ def perform_semantic_search(
             ':userId': user_id
         }
     }
-    
+
     # Add tag filter
     if tags and len(tags) > 0:
         tag_filter_parts = []
         for i, tag in enumerate(tags):
             tag_filter_parts.append(f'contains(tags, :tag{i})')
             scan_params['ExpressionAttributeValues'][f':tag{i}'] = tag
-        
+
         tag_filter = ' AND '.join(tag_filter_parts)
         scan_params['FilterExpression'] += f' AND ({tag_filter})'
-    
+
     # Add date filter
     if from_date or to_date:
         if from_date:
             scan_params['FilterExpression'] += ' AND createdAt >= :fromDate'
             scan_params['ExpressionAttributeValues'][':fromDate'] = from_date
-        
+
         if to_date:
             scan_params['FilterExpression'] += ' AND createdAt <= :toDate'
             scan_params['ExpressionAttributeValues'][':toDate'] = to_date
-    
+
     # Scan the table
     response = table.scan(**scan_params)
     notes = response.get('Items', [])
-    
+
     # Calculate cosine similarity for each note
     notes_with_scores = []
     for note in notes:
@@ -239,10 +234,10 @@ def perform_semantic_search(
             note_embedding = note['embeddings']
             similarity = cosine_similarity(query_embedding, note_embedding)
             notes_with_scores.append((note, similarity))
-    
+
     # Sort by similarity score
     notes_with_scores.sort(key=lambda x: x[1], reverse=True)
-    
+
     # Return the top results
     return [note for note, score in notes_with_scores[:limit]]
 
@@ -265,7 +260,7 @@ def generate_embeddings(text: str) -> List[float]:
                 'text': text
             })
         )
-        
+
         payload = json.loads(response['Payload'].read().decode())
         return payload.get('embeddings', [])
     except Exception as e:
@@ -288,13 +283,13 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     # Convert to numpy arrays
     a = np.array(vec1)
     b = np.array(vec2)
-    
+
     # Calculate cosine similarity
     dot_product = np.dot(a, b)
     norm_a = np.linalg.norm(a)
     norm_b = np.linalg.norm(b)
-    
+
     if norm_a == 0 or norm_b == 0:
         return 0.0
-    
-    return dot_product / (norm_a * norm_b) 
+
+    return dot_product / (norm_a * norm_b)

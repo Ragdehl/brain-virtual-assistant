@@ -175,4 +175,4 @@ def server_error(
         500,
         message,
         error_code="SERVER_ERROR"
-    ) 
+    )

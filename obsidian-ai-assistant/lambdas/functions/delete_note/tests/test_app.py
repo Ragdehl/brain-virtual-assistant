@@ -4,10 +4,9 @@ Tests for the delete_note Lambda function.
 import json
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import boto3
-import pytest
 from moto import mock_dynamodb, mock_s3
 
 # Import the Lambda handler
@@ -25,14 +24,14 @@ class TestDeleteNote(unittest.TestCase):
             "STAGE": "test"
         })
         self.env_patcher.start()
-        
+
         # Set up mock AWS services
         self.dynamodb_mock = mock_dynamodb()
         self.dynamodb_mock.start()
-        
+
         self.s3_mock = mock_s3()
         self.s3_mock.start()
-        
+
         # Create the mock DynamoDB table
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         self.table = self.dynamodb.create_table(
@@ -58,11 +57,11 @@ class TestDeleteNote(unittest.TestCase):
             ],
             BillingMode="PAY_PER_REQUEST",
         )
-        
+
         # Create the mock S3 bucket
         self.s3 = boto3.resource("s3", region_name="us-east-1")
         self.s3.create_bucket(Bucket="obsidian-ai-assistant-content-test")
-        
+
         # Add a test note to DynamoDB
         self.user_id = "test-user-123"
         self.note_id = "test-note-123"
@@ -78,9 +77,9 @@ class TestDeleteNote(unittest.TestCase):
             "contentHash": "test-hash",
             "embeddings": [0.1, 0.2, 0.3]
         }
-        
+
         self.table.put_item(Item=self.note)
-        
+
         # Add test content to S3
         self.s3_client = boto3.client("s3", region_name="us-east-1")
         self.s3_client.put_object(
@@ -110,19 +109,19 @@ class TestDeleteNote(unittest.TestCase):
                 "noteId": self.note_id
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 204)
-        
+
         # Verify the DynamoDB item was deleted
         response = self.table.get_item(
             Key={"userId": self.user_id, "noteId": self.note_id}
         )
         self.assertNotIn("Item", response)
-        
+
         # Verify the S3 object was deleted
         with self.assertRaises(self.s3_client.exceptions.NoSuchKey):
             self.s3_client.get_object(
@@ -143,17 +142,17 @@ class TestDeleteNote(unittest.TestCase):
                 "noteId": self.note_id
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 400)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
-        
+
         # Verify the DynamoDB item was not deleted
         response = self.table.get_item(
             Key={"userId": self.user_id, "noteId": self.note_id}
@@ -173,17 +172,17 @@ class TestDeleteNote(unittest.TestCase):
             },
             "pathParameters": {}
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 400)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
-        
+
         # Verify the DynamoDB item was not deleted
         response = self.table.get_item(
             Key={"userId": self.user_id, "noteId": self.note_id}
@@ -205,13 +204,13 @@ class TestDeleteNote(unittest.TestCase):
                 "noteId": "non-existent-note"
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 404)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "NOT_FOUND")
@@ -231,17 +230,17 @@ class TestDeleteNote(unittest.TestCase):
                 "noteId": self.note_id
             }
         }
-        
+
         # Call the Lambda handler
         response = lambda_handler(event, {})
-        
+
         # Verify the response
         self.assertEqual(response["statusCode"], 404)
-        
+
         body = json.loads(response["body"])
         self.assertIn("error", body)
         self.assertEqual(body["error"]["code"], "NOT_FOUND")
-        
+
         # Verify the DynamoDB item was not deleted
         response = self.table.get_item(
             Key={"userId": self.user_id, "noteId": self.note_id}
@@ -250,4 +249,4 @@ class TestDeleteNote(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

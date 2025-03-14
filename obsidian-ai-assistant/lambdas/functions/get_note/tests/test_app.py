@@ -4,10 +4,7 @@ Tests for the get_note Lambda function.
 import json
 import os
 import unittest
-from unittest.mock import patch, MagicMock
-
-import boto3
-from botocore.stub import Stubber
+from unittest.mock import MagicMock, patch
 
 # Import the Lambda handler
 from app import lambda_handler
@@ -242,4 +239,4 @@ class TestGetNote(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

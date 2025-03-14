@@ -4,19 +4,19 @@ Lambda function for generating embeddings.
 This function generates embeddings for text or note content and optionally
 updates the note in DynamoDB with the generated embeddings.
 """
-import json
 import os
+from typing import Any, Dict, List
+
 import boto3
 import numpy as np
-from typing import Dict, Any, List, Optional
 import requests
 
 # Import shared models and utilities
 from lambdas.utils.response import (
-    format_response,
     format_error,
+    format_not_found_error,
+    format_response,
     format_validation_error,
-    format_not_found_error
 )
 
 # Initialize AWS clients
@@ -45,16 +45,16 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
         if 'text' in event:
             # Generate embeddings for the provided text
             embeddings = generate_embeddings(event['text'])
-            
+
             # Return the embeddings
             return format_response({'embeddings': embeddings})
-        
+
         # Otherwise, this should be a note embedding request
         elif all(key in event for key in ['userId', 'noteId', 'content']):
             user_id = event['userId']
             note_id = event['noteId']
             content = event['content']
-            
+
             # Check if the note exists
             existing_note = table.get_item(
                 Key={
@@ -62,13 +62,13 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
                     'noteId': note_id
                 }
             ).get('Item')
-            
+
             if not existing_note:
                 return format_not_found_error(f"Note with ID {note_id} not found")
-            
+
             # Generate embeddings for the note content
             embeddings = generate_embeddings(content)
-            
+
             # Update the note with the embeddings
             table.update_item(
                 Key={
@@ -80,13 +80,13 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
                     ':embeddings': embeddings
                 }
             )
-            
+
             # Return the embeddings
             return format_response({'embeddings': embeddings})
-        
+
         else:
             return format_validation_error("Missing required parameters. Either 'text' or 'userId', 'noteId', and 'content' must be provided.")
-        
+
     except Exception as e:
         # Log the error for debugging
         print(f"Error generating embeddings: {str(e)}")
@@ -112,11 +112,11 @@ def generate_embeddings(text: str) -> List[float]:
     """
     # For demonstration purposes, we'll generate a simple mock embedding
     # In a real implementation, this would call an embedding model API
-    
+
     # Check if we should use a real embedding service based on environment
     embedding_api_key = os.environ.get('EMBEDDING_API_KEY')
     embedding_api_url = os.environ.get('EMBEDDING_API_URL')
-    
+
     if embedding_api_key and embedding_api_url:
         # Use a real embedding service
         try:
@@ -132,7 +132,7 @@ def generate_embeddings(text: str) -> List[float]:
                 },
                 timeout=10
             )
-            
+
             if response.status_code == 200:
                 result = response.json()
                 return result.get('data', [{}])[0].get('embedding', [])
@@ -140,24 +140,24 @@ def generate_embeddings(text: str) -> List[float]:
                 print(f"Error from embedding API: {response.status_code} - {response.text}")
         except Exception as e:
             print(f"Error calling embedding API: {str(e)}")
-    
+
     # Fall back to mock embeddings if real service is not available or fails
     # This is a very simple mock that creates a deterministic embedding based on the text
     # It's not suitable for real semantic search but works for testing
-    
+
     # Create a simple hash of the text
     text_hash = sum(ord(c) for c in text)
-    
+
     # Use the hash as a seed for numpy's random number generator
     np.random.seed(text_hash)
-    
+
     # Generate a random embedding vector (dimension 5 for simplicity)
     embedding_dim = int(os.environ.get('EMBEDDING_DIM', '5'))
     embeddings = np.random.rand(embedding_dim).tolist()
-    
+
     # Normalize the embeddings to unit length
     norm = np.linalg.norm(embeddings)
     if norm > 0:
         embeddings = [e / norm for e in embeddings]
-    
-    return embeddings 
+
+    return embeddings

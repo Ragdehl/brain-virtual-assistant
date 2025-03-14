@@ -56,4 +56,4 @@ def format_note_list_response(
     if next_cursor:
         response["nextCursor"] = next_cursor
 
-    return response 
+    return response

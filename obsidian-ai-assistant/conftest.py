@@ -3,9 +3,10 @@ Pytest configuration file for the Obsidian AI Assistant project.
 """
 import os
 import sys
-import pytest
+
 import boto3
-from moto import mock_dynamodb, mock_s3, mock_lambda
+import pytest
+from moto import mock_dynamodb, mock_lambda, mock_s3
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -47,7 +48,7 @@ def notes_table(dynamodb):
     """Create a mock notes table."""
     table_name = "obsidian-ai-assistant-notes-test"
     os.environ["DYNAMODB_TABLE"] = table_name
-    
+
     table = dynamodb.create_table(
         TableName=table_name,
         KeySchema=[
@@ -71,7 +72,7 @@ def notes_table(dynamodb):
         ],
         BillingMode="PAY_PER_REQUEST",
     )
-    
+
     return table
 
 
@@ -80,9 +81,9 @@ def content_bucket(s3):
     """Create a mock content bucket."""
     bucket_name = "obsidian-ai-assistant-content-test"
     os.environ["S3_BUCKET"] = bucket_name
-    
+
     s3.create_bucket(Bucket=bucket_name)
-    
+
     return bucket_name
 
 
@@ -91,7 +92,7 @@ def embedding_function(lambda_client):
     """Create a mock embedding function."""
     function_name = "obsidian-ai-assistant-generate-embeddings-test"
     os.environ["EMBEDDING_FUNCTION"] = function_name
-    
+
     lambda_client.create_function(
         FunctionName=function_name,
         Runtime="python3.11",
@@ -100,7 +101,7 @@ def embedding_function(lambda_client):
         Code={"ZipFile": b"def lambda_handler(event, context): return {'embeddings': [0.1, 0.2, 0.3]}"},
         Description="Mock embedding function",
     )
-    
+
     return function_name
 
 
@@ -108,10 +109,10 @@ def embedding_function(lambda_client):
 def test_environment(notes_table, content_bucket, embedding_function):
     """Set up the test environment with all AWS resources."""
     os.environ["STAGE"] = "test"
-    
+
     yield
-    
+
     # Clean up environment variables
     for env_var in ["DYNAMODB_TABLE", "S3_BUCKET", "EMBEDDING_FUNCTION", "STAGE"]:
         if env_var in os.environ:
-            del os.environ[env_var] 
+            del os.environ[env_var]

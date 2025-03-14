@@ -4,15 +4,13 @@ Notes resource for the API.
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 
 import boto3
 from botocore.exceptions import ClientError
 
 from ..models.request.create_note import validate_create_note_request
-from ..models.response.note import format_note_response, format_note_list_response
-from ..models.response.error import format_error_response
-
+from ..models.response.note import format_note_response
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
@@ -232,4 +230,4 @@ def generate_note_id() -> str:
         str: Unique ID
     """
     import uuid
-    return str(uuid.uuid4()) 
+    return str(uuid.uuid4())

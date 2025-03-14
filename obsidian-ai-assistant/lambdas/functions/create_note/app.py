@@ -7,21 +7,20 @@ from datetime import datetime
 from typing import Any, Dict
 
 import boto3
-from botocore.exceptions import ClientError
 
 # Import common utilities
 from common_tools import (
+    DynamoDBUtil,
+    S3Util,
+    log_error,
     log_event,
     log_response,
-    log_error,
-    success_response,
-    validation_error,
     server_error,
+    success_response,
     validate_request_body,
     validate_required_fields,
     validate_string_length,
-    DynamoDBUtil,
-    S3Util
+    validation_error,
 )
 
 # Initialize AWS clients
@@ -159,4 +158,4 @@ def generate_note_id() -> str:
     Returns:
         str: Unique ID
     """
-    return dynamodb_util.generate_id() 
+    return dynamodb_util.generate_id()

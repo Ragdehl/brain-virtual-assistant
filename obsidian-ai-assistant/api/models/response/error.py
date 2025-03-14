@@ -55,4 +55,4 @@ UNAUTHORIZED_ERROR = {
 SERVER_ERROR = {
     "code": "SERVER_ERROR",
     "message": "Internal server error"
-} 
+}
