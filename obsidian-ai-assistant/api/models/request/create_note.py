@@ -91,4 +91,4 @@ def validate_create_note_request(data: Dict[str, Any]) -> Dict[str, Any]:
     if additional_props:
         errors["additionalProperties"] = f"Unknown properties: {', '.join(additional_props)}"
 
-    return errors 
+    return errors
