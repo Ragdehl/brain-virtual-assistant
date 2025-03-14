@@ -1,159 +1,110 @@
-# Obsidian AI Assistant
+# Brain Virtual Assistant Platform
 
-A powerful AI-powered note-taking and knowledge management platform built on AWS serverless architecture.
+A modular AI-powered platform for building intelligent virtual assistants, with a focus on knowledge management and natural language processing.
 
 ## 📋 Overview
 
-Obsidian AI Assistant is a cloud-based note management system that leverages AI to help you organize, search, and gain insights from your notes. The platform uses semantic search, embeddings, and natural language processing to provide an intelligent note-taking experience.
+Brain Virtual Assistant is a cloud-based platform that leverages AI to create specialized virtual assistants. Built on AWS serverless architecture, it provides a foundation for developing AI-powered applications with features like semantic search, embeddings generation, and natural language processing.
 
-## ✨ Features
+## 🌟 Core Platform Features
 
-- **Markdown Notes**: Create and edit notes using Markdown syntax
-- **Semantic Search**: Find notes based on meaning, not just keywords
-- **AI-Powered Insights**: Get suggestions and connections between your notes
-- **Secure Cloud Storage**: All notes are securely stored in AWS S3
-- **Responsive Web Interface**: Access your notes from any device
-- **API Access**: Integrate with other tools and services
+- **Modular Architecture**: Easy to extend with new virtual assistant projects
+- **AI Processing**: Built-in support for embeddings and semantic analysis
+- **Serverless Infrastructure**: Scalable AWS-based architecture
+- **Secure Data Management**: Encrypted storage and secure API access
+- **Common Utilities**: Shared libraries for AWS services integration
+- **Developer-Friendly**: Comprehensive documentation and testing tools
 
-## 🏗️ Architecture
+## 🏗️ Platform Architecture
 
-The project follows a modular, serverless architecture:
+The platform follows a modular, serverless architecture:
 
 ```
-📦 ai-assistant-platform
-├── 📂 common/               # Shared utilities & Lambda Layers
-│   ├── 📜 dynamo_helper.py
-│   ├── 📜 s3_helper.py
-│   ├── 📜 opensearch_helper.py
-│   ├── 📜 agent_core.py       # Common logic for virtual agents
-│   ├── 📜 embeddings.py
-│   ├── 📜 config.py
-│   ├── 📜 utils.py
-│   └── 📜 logging.py
+📦 brain-virtual-assistant
+├── 📂 common/               # Shared Platform Utilities
+│   ├── 📜 dynamo_helper.py    # DynamoDB interactions
+│   ├── 📜 s3_helper.py        # S3 operations
+│   ├── 📜 opensearch_helper.py # Search functionality
+│   ├── 📜 agent_core.py       # Core assistant logic
+│   ├── 📜 embeddings.py       # Vector embeddings
+│   ├── 📜 config.py           # Configuration management
+│   ├── 📜 utils.py           # General utilities
+│   └── 📜 logging.py         # Logging system
 │
-├── 📂 project-obsidian/      # First project (current one)
-│   ├── 📂 lambdas/
-│   ├── 📂 api/
-│   ├── 📂 scripts/
-│   ├── 📜 serverless.yml
-│   ├── 📜 requirements.txt
-│   └── 📜 README.md
+├── 📂 projects/              # Virtual Assistant Projects
+│   ├── 📂 obsidian/         # Obsidian Note Management Assistant
+│   └── 📂 future-projects/  # Placeholder for future assistants
 │
-├── 📂 project-x/             # Second project (related one)
-│   ├── 📂 lambdas/
-│   ├── 📂 api/
-│   ├── 📂 scripts/
-│   ├── 📜 serverless.yml
-│   ├── 📜 requirements.txt
-│   └── 📜 README.md
+├── 📂 infrastructure/        # Shared AWS Infrastructure
+│   ├── 📜 dynamodb.tf       # Database tables
+│   ├── 📜 s3.tf            # Storage buckets
+│   ├── 📜 opensearch.tf    # Search service
+│   └── 📜 lambda_layers.tf # Shared Lambda layers
 │
-├── 📂 infrastructure/        # Shared Terraform/CDK resources
-│   ├── 📜 dynamodb.tf
-│   ├── 📜 s3.tf
-│   ├── 📜 opensearch.tf
-│   └── 📜 lambda_layers.tf
-│
-├── 📂 tests/                 # Global unit and integration tests
+├── 📂 tests/                # Platform-wide Tests
 ├── 📜 .gitignore
 └── 📜 README.md
 ```
-
-### Core Components
-
-- **Lambda Functions**: Serverless functions for CRUD operations on notes
-- **DynamoDB**: Stores note metadata and user information
-- **S3**: Stores the actual note content
-- **OpenSearch**: Provides semantic search capabilities
-- **API Gateway**: RESTful API for interacting with the system
-- **Lambda Layers**: Shared code and dependencies
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- AWS Account
-- Node.js 14+ and npm
+- AWS Account with appropriate permissions
 - Python 3.8+
+- Node.js 14+ (for infrastructure management)
 - AWS CLI configured
-- Serverless Framework
+- Terraform or AWS CDK (for infrastructure)
 
-### Installation
+### Platform Setup
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/obsidian-ai-assistant.git
-   cd obsidian-ai-assistant
-   ```
+```bash
+git clone https://github.com/yourusername/brain-virtual-assistant.git
+cd brain-virtual-assistant
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   pip install -r requirements.txt
-   ```
+2. Install platform dependencies:
+```bash
+pip install -r requirements.txt
+npm install
+```
 
-3. Deploy to AWS:
-   ```bash
-   cd scripts
-   ./deploy.sh
-   ```
+3. Deploy shared infrastructure:
+```bash
+cd infrastructure
+terraform init
+terraform apply
+```
 
 ## 🛠️ Development
 
-### Project Structure
+### Platform Components
 
-- **lambdas/**: Contains all Lambda functions
-  - **notes/**: CRUD operations for notes
-  - **embeddings/**: Generates embeddings for semantic search
-- **layers/common/**: Shared utilities used across Lambda functions
-- **infrastructure/**: Infrastructure as Code (IaC) definitions
-- **scripts/**: Utility scripts for deployment, testing, and maintenance
-- **tests/**: Unit and integration tests
+- **Common Libraries**: Reusable utilities for AWS services
+- **Infrastructure**: Shared AWS resources definitions
+- **Projects**: Individual virtual assistant implementations
+- **Tests**: Platform-wide testing suite
 
-### Available Scripts
+### Available Platform Scripts
 
-- **deploy.sh**: Deploys the project to AWS
-- **cleanup.py**: Cleans up unused resources
-- **index_all_notes.py**: Indexes all existing notes into OpenSearch
-- **update_config.py**: Updates AWS configuration settings
-- **reprocess_embeddings.py**: Recomputes embeddings for all notes
-- **backup_s3.py**: Creates a backup of S3 notes
-- **restore_s3.py**: Restores backups from S3
-- **test_api.py**: Runs tests against API Gateway
-- **generate_sample_data.py**: Generates sample notes for testing
-
-## 📝 API Documentation
-
-### Notes API
-
-- `GET /notes`: List all notes
-- `POST /notes`: Create a new note
-- `GET /notes/{id}`: Get a specific note
-- `PUT /notes/{id}`: Update a note
-- `DELETE /notes/{id}`: Delete a note
-- `GET /notes/search`: Search notes
-
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-cd tests
-python -m unittest discover
-```
-
-Generate sample data for testing:
-
-```bash
-cd scripts
-python generate_sample_data.py --s3-bucket your-bucket --dynamodb-table your-table
-```
+- **setup_platform.sh**: Initializes the platform infrastructure
+- **create_project.sh**: Scaffolds a new virtual assistant project
+- **deploy_common.sh**: Updates shared components
+- **run_platform_tests.sh**: Executes platform-wide tests
 
 ## 🔒 Security
 
-- All data is encrypted at rest and in transit
-- API Gateway uses API keys for authentication
-- IAM roles follow the principle of least privilege
-- Sensitive configuration is stored in AWS Systems Manager Parameter Store
+- AWS IAM roles with least privilege principle
+- Data encryption at rest and in transit
+- Secure configuration management
+- API authentication and authorization
+- Regular security audits
+
+## 📦 Current Projects
+
+### [Obsidian AI Assistant](./projects/obsidian/README.md)
+An intelligent note-taking and knowledge management assistant that helps users organize, search, and analyze their notes using AI capabilities.
 
 ## 🤝 Contributing
 
@@ -167,6 +118,9 @@ python generate_sample_data.py --s3-bucket your-bucket --dynamodb-table your-tab
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 📞 Contact
+## 📞 Support
 
-For questions or support, please open an issue on GitHub or contact the maintainers directly.
+For questions or support:
+- Open an issue on GitHub
+- Check our [documentation](./docs)
+- Contact the maintainers

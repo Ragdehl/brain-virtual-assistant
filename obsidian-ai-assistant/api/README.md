@@ -4,28 +4,40 @@ A serverless REST API for the Obsidian AI Assistant, built with Python and AWS L
 
 ## Architecture
 
-The API is built using a serverless architecture with AWS Lambda and API Gateway. It consists of the following components:
+The API is built using a modular architecture with AWS Lambda and API Gateway. It consists of the following components:
 
 ### Core Components
 
 - `api_handler.py` - Main Lambda handler for API Gateway requests
-- `auth.py` - Authentication and API key management using AWS Systems Manager
+- `auth.py` - Authentication and API key management
 - `response.py` - Standardized API response formatting
 - `utils.py` - Utility functions for logging, configuration, and request handling
 
-### Key Features
+### Models
 
-- API Key Authentication
-- CORS Support
-- Request Validation
-- Error Handling
-- Request Logging (with sensitive data redaction)
-- Query Parameter Parsing
-- Pagination Support
+The `models/` directory contains JSON schemas for request and response validation:
+
+- `models/request/` - Request validation schemas
+  - `create_note.py` - Schema for note creation requests
+  - `update_note.py` - Schema for note update requests
+  - `search.py` - Schema for search requests
+
+- `models/response/` - Response formatting schemas
+  - `note.py` - Schema for note responses
+  - `error.py` - Schema for error responses
+  - `search.py` - Schema for search responses
+
+### Resources
+
+The `resources/` directory contains API endpoint definitions:
+
+- `notes.py` - Note management endpoints
+- `search.py` - Search endpoints
+- `common.py` - Shared API utilities
 
 ## API Endpoints
 
-### Notes
+### Notes Management
 
 - `POST /notes` - Create a new note
 - `GET /notes` - List notes (with pagination)
@@ -33,9 +45,11 @@ The API is built using a serverless architecture with AWS Lambda and API Gateway
 - `PUT /notes/{note_id}` - Update a note
 - `DELETE /notes/{note_id}` - Delete a note
 
-### Search
+### Search & Discovery
 
-- `GET /search` - Search notes by query and tags
+- `GET /search` - Semantic search across notes
+- `GET /notes/tags` - List all tags
+- `GET /notes/related/{note_id}` - Find related notes
 
 ### System
 
@@ -91,35 +105,40 @@ Authorization: Bearer your-api-key
 - `limit` - Maximum number of items to return (default: 10, max: 100)
 - `cursor` - Pagination cursor for fetching next page
 
-### Search
+### Search & Filtering
 
 - `query` - Search query string
 - `tags` - Comma-separated list of tags to filter by
+- `sort` - Sort order (created_at, updated_at)
+- `order` - Sort direction (asc, desc)
 
-## Development Setup
+## Development
+
+### Prerequisites
+
+- Python 3.8+
+- AWS credentials configured
+- API key for authentication
+
+### Setup
 
 1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Configure AWS credentials:
+2. Configure environment:
 ```bash
-aws configure
-```
-
-3. Set up environment variables:
-```bash
-export DYNAMODB_TABLE=your-table-name
-export S3_BUCKET=your-bucket-name
+export DYNAMODB_TABLE=your-notes-table
+export S3_BUCKET=your-notes-bucket
 export STAGE=dev
 ```
 
 ## Deployment
 
-The API is designed to be deployed as an AWS Lambda function behind API Gateway. Deployment can be handled using AWS SAM, Serverless Framework, or other IaC tools.
+The API is designed to be deployed as an AWS Lambda function behind API Gateway. Deployment can be handled using AWS CDK, Serverless Framework, or other IaC tools.
 
-### Required AWS Resources
+### Required Resources
 
 - API Gateway
 - Lambda Function

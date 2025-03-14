@@ -1,86 +1,142 @@
-swagger.yaml - OpenAPI/Swagger definition that documents all the API endpoints, request/response schemas, and authentication requirements.
+# Obsidian AI Assistant
 
-index.js - The main entry point for the Express.js API server, which sets up middleware, routes, and error handling.
+An AI-powered assistant for the Obsidian note-taking platform, providing intelligent note management, semantic search, and content generation capabilities.
 
-routes/notes.js - Defines the routes for CRUD operations on notes, including listing, creating, retrieving, updating, deleting, and searching notes.
+## Project Overview
 
-middleware/auth.js - Authentication middleware that validates API keys against values stored in AWS Systems Manager Parameter Store.
+The Obsidian AI Assistant is a serverless application built on AWS that enhances the Obsidian note-taking experience with AI capabilities. It provides:
 
-middleware/error-handler.js - Centralized error handling middleware that formats error responses consistently.
+- Secure storage and management of notes
+- Semantic search using embeddings
+- Text-based search
+- Tagging and organization
+- Content generation and summarization (coming soon)
 
-controllers/notes-controller.js - Contains the business logic for handling note operations, including interactions with AWS services (DynamoDB, S3, Lambda).
+## Architecture
 
-models/note.js - Defines the Note model class with methods for converting between different representations (JSON, DynamoDB).
+The application is built using a serverless architecture on AWS:
 
-utils/response.js - Utility functions for formatting API responses consistently.
+- **API Layer**: AWS API Gateway + Lambda functions
+- **Storage Layer**: DynamoDB for metadata, S3 for content
+- **Search Layer**: Vector embeddings stored in DynamoDB
+- **Authentication**: Amazon Cognito
 
-package.json - Defines the project dependencies, scripts, and metadata.
+### Directory Structure
 
+```
+obsidian-ai-assistant/
+├── .github/                    # GitHub Actions workflows
+│   └── workflows/              # CI/CD pipeline configurations
+├── lambdas/                    # Lambda functions
+│   ├── functions/              # Individual Lambda functions
+│   │   ├── create_note/        # Create note function
+│   │   ├── get_note/           # Get note function
+│   │   ├── list_notes/         # List notes function
+│   │   ├── update_note/        # Update note function
+│   │   ├── delete_note/        # Delete note function
+│   │   ├── search_notes/       # Search notes function
+│   │   └── generate_embeddings/ # Generate embeddings function
+│   ├── models/                 # Shared data models
+│   └── utils/                  # Shared utilities
+├── tests/                      # Integration tests
+├── pyproject.toml              # Python project configuration
+├── setup.py                    # Package setup
+├── requirements.txt            # Dependencies
+└── serverless.yml              # Serverless Framework configuration
+```
 
-Why Use Both JavaScript and Python in the Obsidian AI Assistant?
-That's an excellent question about the mixed use of JavaScript and Python in the Obsidian AI Assistant project. Let me explain the reasoning and benefits behind this architectural decision.
-Different Strengths for Different Tasks
-JavaScript (Node.js)
-API and Web Services: The API layer is built with Express.js (JavaScript) because:
-JavaScript excels at handling HTTP requests and asynchronous operations
-Express.js is lightweight and optimized for building RESTful APIs
-The event-driven, non-blocking I/O model of Node.js is perfect for API servers
-It's the standard language for web development, making it easier to integrate with frontend applications
-Python
-Data Processing and AI: The Lambda functions for embeddings and data processing use Python because:
-Python is the dominant language in machine learning and AI
-Libraries like NumPy, TensorFlow, PyTorch, and Hugging Face are Python-first
-Vector operations and embedding generation are more efficient in Python
-Natural language processing tools have better Python support
-Practical Benefits of This Hybrid Approach
-Best Tool for the Job: Each language is used where it performs best
-JavaScript: Web APIs, real-time operations
-Python: Data science, ML/AI, complex processing
-Microservices Architecture: The serverless architecture allows different services to use different languages
-Each Lambda function can be written in the most appropriate language
-Services communicate via well-defined APIs, not direct code integration
-Team Expertise Utilization: Allows different team members to work in their strongest language
-Web developers can work in JavaScript
-Data scientists and ML engineers can work in Python
-Specialized Libraries: Access to the best libraries in each ecosystem
-JavaScript: Express, React, Socket.io
-Python: TensorFlow, PyTorch, spaCy, scikit-learn
-How They Work Together
-The architecture uses a clear separation of concerns:
-JavaScript API Layer (what we just examined):
-Handles HTTP requests/responses
-Manages authentication and authorization
-Coordinates data flow between services
-Interacts with DynamoDB and S3 directly
-Python Processing Layer:
-Generates embeddings for semantic search
-Processes natural language queries
-Performs vector similarity searches
-Handles complex data transformations
-Communication Between Layers:
-The JavaScript API invokes Python Lambda functions when needed
-Data is passed via JSON in request/response payloads
-Results from Python processing are stored in shared resources (S3, DynamoDB, OpenSearch)
-Example from the Code
-In the notes-controller.js file we just examined, you can see this interaction:
-This JavaScript code is calling a Python Lambda function that handles the embedding generation. The Python function would:
-Process the text
-Generate embeddings using a machine learning model
-Store the embeddings in OpenSearch
-Return results to the JavaScript caller
-Challenges and Solutions
-This approach does come with challenges:
-Consistency: Maintaining consistent coding standards across languages
-Solution: Clear documentation and interface definitions
-Deployment Complexity: Managing dependencies for multiple languages
-Solution: Using containerization and Lambda layers
-Testing: Testing cross-language interactions
-Solution: Integration tests and clear API contracts
-Skill Requirements: Developers need to understand both ecosystems
-Solution: Clear separation of concerns and good documentation
-Industry Context
-This multi-language approach is common in modern cloud applications, especially those involving AI:
-Netflix uses Node.js for their API and Python for data science
-Uber uses Node.js for their rider app backend and Python for trip optimization
-Many AI startups use Python for ML and JavaScript for web interfaces
-By using both JavaScript and Python, the Obsidian AI Assistant leverages the strengths of each language while maintaining a clean, modular architecture that's both powerful and maintainable.
+## Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 14+ (for Serverless Framework)
+- AWS CLI configured with appropriate credentials
+- Serverless Framework installed globally
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/obsidian-ai/obsidian-ai-assistant.git
+   cd obsidian-ai-assistant
+   ```
+
+2. Create and activate a virtual environment:
+   ```
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   pip install -r dev-requirements.txt
+   ```
+
+4. Install pre-commit hooks:
+   ```
+   pre-commit install
+   ```
+
+### Local Development
+
+To run tests:
+```
+pytest
+```
+
+To lint the code:
+```
+ruff check .
+black --check .
+```
+
+### Deployment
+
+The application can be deployed using the Serverless Framework:
+
+```
+serverless deploy --stage dev
+```
+
+For production deployment:
+```
+serverless deploy --stage prod
+```
+
+## API Documentation
+
+### Endpoints
+
+- `POST /notes` - Create a new note
+- `GET /notes/{noteId}` - Get a note by ID
+- `GET /notes` - List notes with optional filtering and pagination
+- `PUT /notes/{noteId}` - Update a note
+- `DELETE /notes/{noteId}` - Delete a note
+- `POST /notes/search` - Search notes (text or semantic search)
+
+### Authentication
+
+All API endpoints require authentication using JWT tokens from Amazon Cognito. Include the token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -am 'Add my feature'`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- The Obsidian team for creating an amazing note-taking platform
+- The AWS Serverless community for excellent tools and documentation

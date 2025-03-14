@@ -1,14 +1,219 @@
 # Serverless Framework configuration for obsidian-ai-assistant
 service: obsidian-ai-assistant
 
+frameworkVersion: '3'
+
 provider:
   name: aws
   runtime: python3.11
-  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  memorySize: 256
+  timeout: 30
   environment:
-    DYNAMODB_TABLE: ${self:service}-notes-${opt:stage, self:provider.stage}
-    S3_BUCKET: ${self:service}-notes-${opt:stage, self:provider.stage}
-    OPENSEARCH_DOMAIN: ${self:service}-search-${opt:stage, self:provider.stage}
-    BEDROCK_MODEL_ID: amazon.titan-embed-text-v1
+    STAGE: ${self:provider.stage}
+    DYNAMODB_TABLE: ${self:service}-notes-${self:provider.stage}
+    S3_BUCKET: ${self:service}-content-${self:provider.stage}
+    EMBEDDING_FUNCTION: ${self:service}-generate-embeddings-${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: !GetAtt NotesTable.Arn
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+          Resource: !Join ['', ['arn:aws:s3:::', !Ref ContentBucket, '/*']]
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+          Resource: !GetAtt GenerateEmbeddingsFunction.Arn
 
-# Define functions, resources, and layers here 
+package:
+  individually: true
+  patterns:
+    - '!node_modules/**'
+    - '!.venv/**'
+    - '!.git/**'
+    - '!tests/**'
+    - '!.pytest_cache/**'
+    - '!__pycache__/**'
+    - '!.coverage'
+    - '!.ruff_cache/**'
+
+functions:
+  create-note:
+    handler: lambdas/functions/create_note/app.lambda_handler
+    events:
+      - http:
+          path: notes
+          method: post
+          cors: true
+    package:
+      patterns:
+        - 'lambdas/functions/create_note/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/create_note/tests/**'
+
+  get-note:
+    handler: lambdas/functions/get_note/app.lambda_handler
+    events:
+      - http:
+          path: notes/{noteId}
+          method: get
+          cors: true
+    package:
+      patterns:
+        - 'lambdas/functions/get_note/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/get_note/tests/**'
+
+  list-notes:
+    handler: lambdas/functions/list_notes/app.lambda_handler
+    events:
+      - http:
+          path: notes
+          method: get
+          cors: true
+    package:
+      patterns:
+        - 'lambdas/functions/list_notes/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/list_notes/tests/**'
+
+  update-note:
+    handler: lambdas/functions/update_note/app.lambda_handler
+    events:
+      - http:
+          path: notes/{noteId}
+          method: put
+          cors: true
+    package:
+      patterns:
+        - 'lambdas/functions/update_note/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/update_note/tests/**'
+
+  delete-note:
+    handler: lambdas/functions/delete_note/app.lambda_handler
+    events:
+      - http:
+          path: notes/{noteId}
+          method: delete
+          cors: true
+    package:
+      patterns:
+        - 'lambdas/functions/delete_note/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/delete_note/tests/**'
+
+  search-notes:
+    handler: lambdas/functions/search_notes/app.lambda_handler
+    events:
+      - http:
+          path: notes/search
+          method: post
+          cors: true
+    package:
+      patterns:
+        - 'lambdas/functions/search_notes/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/search_notes/tests/**'
+
+  generate-embeddings:
+    handler: lambdas/functions/generate_embeddings/app.lambda_handler
+    timeout: 60
+    memorySize: 512
+    package:
+      patterns:
+        - 'lambdas/functions/generate_embeddings/**'
+        - 'lambdas/models/**'
+        - 'lambdas/utils/**'
+        - '!lambdas/functions/generate_embeddings/tests/**'
+
+resources:
+  Resources:
+    NotesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: noteId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: noteId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: createdAtIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    ContentBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              AllowedOrigins:
+                - '*'
+              MaxAge: 3000
+
+    ContentBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref ContentBucket
+        PolicyDocument:
+          Statement:
+            - Action:
+                - s3:GetObject
+              Effect: Allow
+              Resource: !Join ['', ['arn:aws:s3:::', !Ref ContentBucket, '/*']]
+              Principal: '*'
+              Condition:
+                StringEquals:
+                  aws:UserAgent: 'ObsidianAI'
+
+plugins:
+  - serverless-python-requirements
+  - serverless-iam-roles-per-function
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    layer: true 
