@@ -6,9 +6,19 @@ This function retrieves a list of notes for a user, with optional filtering and 
 import base64
 import json
 import os
-from typing import Any, Dict
+import sys
+from typing import Any, Dict, Optional
 
 import boto3
+
+# Add common_tools to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../../lambdas/layers/common_tools/python"))
+
+# Import common utilities
+from lib import (  # type: ignore
+    api_handler,
+    ValidationError
+)
 
 # Import shared models and utilities
 from lambdas.models.note import NoteListResponse, NoteResponse
@@ -19,27 +29,23 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ.get('DYNAMODB_TABLE', 'obsidian-ai-assistant-notes-dev'))
 
 
-def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, Any]:
+@api_handler(
+    extract_user_id_param=True,
+    extract_query_params=True
+)
+def lambda_handler(user_id: str, query_params: Dict[str, str], context: Any) -> Dict[str, Any]:
     """
     Handle the Lambda event for listing notes.
     
     Args:
-        event: The Lambda event object from API Gateway
+        user_id: The user ID from the authorization context
+        query_params: The query parameters from the request
         context: The Lambda context object
         
     Returns:
         A formatted API Gateway response
     """
     try:
-        # Extract user ID from the authorizer context
-        try:
-            user_id = event['requestContext']['authorizer']['claims']['sub']
-        except KeyError:
-            return format_validation_error("Missing user ID in request context")
-
-        # Extract query parameters
-        query_params = event.get('queryStringParameters', {}) or {}
-
         # Parse pagination parameters
         limit = int(query_params.get('limit', '50'))
         if limit < 1 or limit > 100:
@@ -67,7 +73,7 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
                 last_evaluated_key = json.loads(base64.b64decode(next_token).decode('utf-8'))
                 query_params['ExclusiveStartKey'] = last_evaluated_key
             except (json.JSONDecodeError, base64.binascii.Error):
-                return format_validation_error("Invalid pagination token")
+                raise ValidationError("Invalid pagination token")
 
         # Add date range filter if provided
         if from_date or to_date:

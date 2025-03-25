@@ -1,0 +1,60 @@
+{
+  "resourcePath": "/notes/{id}",
+  "httpMethod": "DELETE",
+  "description": "Delete a note",
+  "operationId": "deleteNote",
+  "produces": ["application/json"],
+  "parameters": [
+    {
+      "name": "id",
+      "in": "path",
+      "description": "ID of the note to delete",
+      "required": true,
+      "type": "string"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Note deleted successfully",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Note deleted successfully"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Invalid ID supplied",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    },
+    "401": {
+      "description": "Unauthorized",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    },
+    "404": {
+      "description": "Note not found",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    },
+    "500": {
+      "description": "Server error",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    }
+  },
+  "security": [
+    {
+      "CognitoAuth": []
+    }
+  ],
+  "lambdaFunction": "delete_note"
+} 

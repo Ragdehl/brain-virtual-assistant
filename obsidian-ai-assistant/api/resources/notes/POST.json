@@ -1,0 +1,51 @@
+{
+  "resourcePath": "/notes",
+  "httpMethod": "POST",
+  "description": "Create a new note",
+  "operationId": "createNote",
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "parameters": [
+    {
+      "name": "body",
+      "in": "body",
+      "description": "Note object that needs to be created",
+      "required": true,
+      "schema": {
+        "$ref": "../../models/NoteRequest.json"
+      }
+    }
+  ],
+  "responses": {
+    "201": {
+      "description": "Note created successfully",
+      "schema": {
+        "$ref": "../../models/NoteResponse.json"
+      }
+    },
+    "400": {
+      "description": "Invalid request body",
+      "schema": {
+        "$ref": "../../models/ErrorResponse.json"
+      }
+    },
+    "401": {
+      "description": "Unauthorized",
+      "schema": {
+        "$ref": "../../models/ErrorResponse.json"
+      }
+    },
+    "500": {
+      "description": "Server error",
+      "schema": {
+        "$ref": "../../models/ErrorResponse.json"
+      }
+    }
+  },
+  "security": [
+    {
+      "CognitoAuth": []
+    }
+  ],
+  "lambdaFunction": "create_note"
+} 

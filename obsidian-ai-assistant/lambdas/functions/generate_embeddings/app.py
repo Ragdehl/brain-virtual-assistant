@@ -5,11 +5,22 @@ This function generates embeddings for text or note content and optionally
 updates the note in DynamoDB with the generated embeddings.
 """
 import os
+import sys
 from typing import Any, Dict, List
 
 import boto3
 import numpy as np
 import requests
+
+# Add common_tools to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../../lambdas/layers/common_tools/python"))
+
+# Import common utilities
+from lib import (  # type: ignore
+    api_handler,
+    NotFoundError,
+    ValidationError
+)
 
 # Import shared models and utilities
 from lambdas.utils.response import (
@@ -29,7 +40,8 @@ table_name = os.environ.get('DYNAMODB_TABLE', 'obsidian-ai-assistant-notes-dev')
 table = dynamodb.Table(table_name)
 
 
-def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, Any]:
+@api_handler
+def lambda_handler(event: Dict[Any, Any], context: Any) -> Dict[str, Any]:
     """
     Handle the Lambda event for generating embeddings.
     

@@ -27,7 +27,7 @@ class DynamoDBUtil:
             raise ValueError("DynamoDB table name is required")
         self.table = self.dynamodb.Table(self.table_name)
 
-    def get_item(self, key: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def get_item(self, key: Dict[str, Any]) -> Dict[str, Any]:
         """
         Get an item from DynamoDB.
 
@@ -35,15 +35,27 @@ class DynamoDBUtil:
             key (dict): Primary key of the item to get
 
         Returns:
-            dict: Item from DynamoDB, or None if not found
+            dict: Item from DynamoDB
+
+        Raises:
+            NotFoundError: If the item is not found
+            ServerError: If there's an error accessing DynamoDB
         """
         try:
             response = self.table.get_item(Key=key)
-            return response.get("Item")
+            item = response.get("Item")
+            
+            if not item:
+                raise NotFoundError(f"Item not found with key: {key}")
+                
+            return item
+            
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                return None
-            raise
+                raise NotFoundError(f"Table {self.table_name} not found")
+            raise ServerError(f"Error accessing DynamoDB: {str(e)}")
+        except Exception as e:
+            raise ServerError(f"Unexpected error: {str(e)}")
 
     def put_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -41,7 +41,8 @@ def create_response(
 def success_response(
     status_code: int = 200,
     data: Optional[Any] = None,
-    message: Optional[str] = None
+    message: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Format a successful API response.
@@ -50,6 +51,7 @@ def success_response(
         status_code (int): HTTP status code (default: 200)
         data (Any, optional): Response data
         message (str, optional): Success message
+        headers (dict, optional): Additional headers to include
 
     Returns:
         dict: Formatted success response
@@ -63,14 +65,15 @@ def success_response(
     if message:
         body["message"] = message
 
-    return create_response(status_code, body)
+    return create_response(status_code, body, headers)
 
 
 def error_response(
     status_code: int,
     message: str,
     error_code: Optional[str] = None,
-    details: Optional[Union[str, Dict[str, Any]]] = None
+    details: Optional[Union[str, Dict[str, Any]]] = None,
+    headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Format an error API response.
@@ -80,6 +83,7 @@ def error_response(
         message (str): Error message
         error_code (str, optional): Error code for client reference
         details (Union[str, dict], optional): Additional error details
+        headers (dict, optional): Additional headers to include
 
     Returns:
         dict: Formatted error response
@@ -96,12 +100,13 @@ def error_response(
     if details:
         body["error"]["details"] = details
 
-    return create_response(status_code, body)
+    return create_response(status_code, body, headers)
 
 
 def validation_error(
     message: str,
-    details: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None,
+    headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Format a validation error response.
@@ -109,6 +114,7 @@ def validation_error(
     Args:
         message (str): Validation error message
         details (dict, optional): Validation error details
+        headers (dict, optional): Additional headers to include
 
     Returns:
         dict: Formatted validation error response
@@ -117,18 +123,21 @@ def validation_error(
         400,
         message,
         error_code="VALIDATION_ERROR",
-        details=details
+        details=details,
+        headers=headers
     )
 
 
 def not_found_error(
-    message: str = "Resource not found"
+    message: str = "Resource not found",
+    headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Format a not found error response.
 
     Args:
         message (str): Not found error message
+        headers (dict, optional): Additional headers to include
 
     Returns:
         dict: Formatted not found error response
@@ -136,18 +145,21 @@ def not_found_error(
     return error_response(
         404,
         message,
-        error_code="NOT_FOUND"
+        error_code="NOT_FOUND",
+        headers=headers
     )
 
 
 def unauthorized_error(
-    message: str = "Unauthorized"
+    message: str = "Unauthorized",
+    headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Format an unauthorized error response.
 
     Args:
         message (str): Unauthorized error message
+        headers (dict, optional): Additional headers to include
 
     Returns:
         dict: Formatted unauthorized error response
@@ -155,18 +167,21 @@ def unauthorized_error(
     return error_response(
         401,
         message,
-        error_code="UNAUTHORIZED"
+        error_code="UNAUTHORIZED",
+        headers=headers
     )
 
 
 def server_error(
-    message: str = "Internal server error"
+    message: str = "Internal server error",
+    headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """
     Format a server error response.
 
     Args:
         message (str): Server error message
+        headers (dict, optional): Additional headers to include
 
     Returns:
         dict: Formatted server error response
@@ -174,5 +189,6 @@ def server_error(
     return error_response(
         500,
         message,
-        error_code="SERVER_ERROR"
+        error_code="SERVER_ERROR",
+        headers=headers
     )

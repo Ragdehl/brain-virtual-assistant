@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NoteRequest",
+  "description": "Schema for create and update note requests",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the note",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "content": {
+      "type": "string",
+      "description": "Content of the note in markdown format",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "description": "List of tags associated with the note",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      }
+    },
+    "folder": {
+      "type": "string",
+      "description": "Folder path where the note is stored",
+      "default": "/",
+      "pattern": "^/[a-zA-Z0-9-_/]*$"
+    }
+  },
+  "required": ["title", "content"],
+  "additionalProperties": false
+} 

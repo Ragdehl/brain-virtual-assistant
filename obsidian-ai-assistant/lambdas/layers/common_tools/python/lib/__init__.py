@@ -23,6 +23,18 @@ from .validation_util import (
     validate_required_fields,
     validate_string_length,
 )
+from .api_util import (
+    api_handler,
+    ApiError,
+    ValidationError,
+    NotFoundError,
+    UnauthorizedError,
+    ServerError,
+    extract_path_parameter,
+    extract_query_parameter,
+    extract_body,
+    extract_user_id,
+)
 
 __all__ = [
     # DynamoDB utilities
@@ -54,5 +66,17 @@ __all__ = [
     "validate_enum",
     "validate_json_string",
     "sanitize_string",
-    "validate_request_body"
+    "validate_request_body",
+    
+    # API utilities
+    "api_handler",
+    "ApiError",
+    "ValidationError",
+    "NotFoundError",
+    "UnauthorizedError",
+    "ServerError",
+    "extract_path_parameter",
+    "extract_query_parameter",
+    "extract_body",
+    "extract_user_id"
 ]

@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NotesListResponse",
+  "description": "Schema for response when listing notes",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Success message"
+    },
+    "notes": {
+      "type": "array",
+      "description": "Array of note objects",
+      "items": {
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "description": "Unique identifier for the note"
+          },
+          "userId": {
+            "type": "string",
+            "description": "ID of the user who owns the note"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the note"
+          },
+          "tags": {
+            "type": "array",
+            "description": "List of tags associated with the note",
+            "items": {
+              "type": "string"
+            }
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder path where the note is stored"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the note was created",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the note was last updated",
+            "format": "date-time"
+          }
+        },
+        "required": ["noteId", "userId", "title", "createdAt", "updatedAt"],
+        "additionalProperties": false
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "description": "Pagination information",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Number of notes returned in this response"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of notes available"
+        },
+        "nextToken": {
+          "type": ["string", "null"],
+          "description": "Token for getting the next page of results, null if no more results"
+        }
+      },
+      "required": ["count", "total"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["notes", "pagination"],
+  "additionalProperties": false
+} 

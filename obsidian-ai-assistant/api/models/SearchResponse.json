@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SearchResponse",
+  "description": "Schema for note search responses",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string",
+      "description": "Success message"
+    },
+    "results": {
+      "type": "array",
+      "description": "Array of search result objects",
+      "items": {
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "description": "Unique identifier for the note"
+          },
+          "userId": {
+            "type": "string",
+            "description": "ID of the user who owns the note"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the note"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Excerpt from the note content with highlighted match"
+          },
+          "tags": {
+            "type": "array",
+            "description": "List of tags associated with the note",
+            "items": {
+              "type": "string"
+            }
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder path where the note is stored"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the note was created",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the note was last updated",
+            "format": "date-time"
+          },
+          "score": {
+            "type": "number",
+            "description": "Relevance score for the search match"
+          }
+        },
+        "required": ["noteId", "userId", "title", "excerpt", "score"],
+        "additionalProperties": false
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "Metadata about the search",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The search query that was executed"
+        },
+        "searchType": {
+          "type": "string",
+          "description": "Type of search that was performed",
+          "enum": ["semantic", "text", "tags"]
+        },
+        "totalResults": {
+          "type": "integer",
+          "description": "Total number of results found"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results returned"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results skipped"
+        },
+        "nextOffset": {
+          "type": ["integer", "null"],
+          "description": "Offset for the next page of results, null if no more results"
+        },
+        "executionTimeMs": {
+          "type": "integer",
+          "description": "Execution time in milliseconds"
+        }
+      },
+      "required": ["query", "searchType", "totalResults"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["results", "meta"],
+  "additionalProperties": false
+} 

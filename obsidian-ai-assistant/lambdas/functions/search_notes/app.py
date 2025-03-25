@@ -5,10 +5,20 @@ This function supports both text-based and semantic search for notes.
 """
 import json
 import os
+import sys
 from typing import Any, Dict, List, Optional
 
 import boto3
 import numpy as np
+
+# Add common_tools to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../../lambdas/layers/common_tools/python"))
+
+# Import common utilities
+from lib import (  # type: ignore
+    api_handler,
+    ValidationError
+)
 
 # Import shared models and utilities
 from lambdas.models.note import NoteListResponse, NoteResponse, SearchNotesRequest
@@ -26,39 +36,33 @@ embedding_function_name = os.environ.get('EMBEDDING_FUNCTION', 'obsidian-ai-assi
 table = dynamodb.Table(table_name)
 
 
-def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, Any]:
+@api_handler(
+    extract_user_id_param=True,
+    extract_body_param=True,
+    required_body=True
+)
+def lambda_handler(user_id: str, body: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Handle the Lambda event for searching notes.
     
     Args:
-        event: The Lambda event object from API Gateway
+        user_id: The user ID from the authorization context
+        body: The parsed request body
         context: The Lambda context object
         
     Returns:
         A formatted API Gateway response
     """
     try:
-        # Extract user ID from the authorizer context
-        try:
-            user_id = event['requestContext']['authorizer']['claims']['sub']
-        except KeyError:
-            return format_validation_error("Missing user ID in request context")
-
         # Parse request body
         try:
-            if not event.get('body'):
-                return format_validation_error("Missing request body")
-
-            body = json.loads(event['body'])
             search_request = SearchNotesRequest(**body)
-        except json.JSONDecodeError:
-            return format_validation_error("Invalid JSON in request body")
         except Exception as e:
-            return format_validation_error(f"Invalid request body: {str(e)}")
+            raise ValidationError(f"Invalid request body: {str(e)}")
 
         # Validate search type
         if search_request.searchType not in ['text', 'semantic']:
-            return format_validation_error("Invalid search type. Must be 'text' or 'semantic'")
+            raise ValidationError("Invalid search type. Must be 'text' or 'semantic'")
 
         # Perform the search
         if search_request.searchType == 'text':
@@ -86,7 +90,7 @@ def lambda_handler(event: Dict[Any, Any], context: Dict[Any, Any]) -> Dict[str, 
             pagination={"nextToken": None}  # Pagination not supported for search yet
         )
 
-        return format_response(note_list_response.model_dump())
+        return note_list_response.model_dump()
 
     except Exception as e:
         # Log the error for debugging

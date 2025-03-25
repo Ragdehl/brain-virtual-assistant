@@ -1,0 +1,51 @@
+{
+  "resourcePath": "/notes/search",
+  "httpMethod": "POST",
+  "description": "Search notes using text or semantic search",
+  "operationId": "searchNotes",
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "parameters": [
+    {
+      "name": "body",
+      "in": "body",
+      "description": "Search parameters",
+      "required": true,
+      "schema": {
+        "$ref": "../../../models/SearchRequest.json"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Successful operation",
+      "schema": {
+        "$ref": "../../../models/SearchResponse.json"
+      }
+    },
+    "400": {
+      "description": "Invalid request body",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    },
+    "401": {
+      "description": "Unauthorized",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    },
+    "500": {
+      "description": "Server error",
+      "schema": {
+        "$ref": "../../../models/ErrorResponse.json"
+      }
+    }
+  },
+  "security": [
+    {
+      "CognitoAuth": []
+    }
+  ],
+  "lambdaFunction": "search_notes"
+} 

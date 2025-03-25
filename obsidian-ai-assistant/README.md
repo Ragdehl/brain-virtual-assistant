@@ -21,6 +21,34 @@ The application is built using a serverless architecture on AWS:
 - **Search Layer**: Vector embeddings stored in DynamoDB
 - **Authentication**: Amazon Cognito
 
+### DynamoDB Table Structure
+
+The `obsidian-notes` table stores note metadata with the following schema:
+
+**Primary Key:**
+- `userId` (String, Hash Key) - The user's unique identifier
+- `noteId` (String, Range Key) - The note's unique identifier
+
+**Attributes:**
+- `title` (String) - The note's title
+- `s3Key` (String) - The S3 key where the note's content is stored
+- `createdAt` (String) - ISO 8601 timestamp of when the note was created
+- `updatedAt` (String) - ISO 8601 timestamp of when the note was last modified
+- `tags` (List, Optional) - List of tags associated with the note
+- `folder` (String, Optional) - The folder path where the note is stored
+
+**Global Secondary Indexes:**
+- `createdAtIndex`
+  - Hash Key: `userId`
+  - Range Key: `createdAt`
+  - Projection: ALL
+  - Used for listing notes in chronological order
+
+**Notes:**
+- The table uses on-demand (PAY_PER_REQUEST) billing mode
+- Content is stored in S3, with the `s3Key` attribute referencing the object
+- Timestamps are stored in ISO 8601 format with UTC timezone (e.g., "2024-03-14T12:00:00Z")
+
 ### Directory Structure
 
 ```

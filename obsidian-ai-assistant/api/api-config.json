@@ -1,0 +1,70 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Obsidian AI Assistant API",
+    "description": "API for the Obsidian AI Assistant, providing intelligent note management, semantic search, and content generation capabilities.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Obsidian AI Team",
+      "email": "support@obsidian-ai.com"
+    }
+  },
+  "basePath": "/api",
+  "schemes": ["https"],
+  "produces": ["application/json"],
+  "consumes": ["application/json"],
+  "securityDefinitions": {
+    "CognitoAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "x-amazon-apigateway-authtype": "cognito_user_pools"
+    }
+  },
+  "paths": {
+    "/notes": {
+      "get": {
+        "$ref": "./resources/notes/GET.json"
+      },
+      "post": {
+        "$ref": "./resources/notes/POST.json"
+      }
+    },
+    "/notes/{id}": {
+      "get": {
+        "$ref": "./resources/notes/{id}/GET.json"
+      },
+      "put": {
+        "$ref": "./resources/notes/{id}/PUT.json"
+      },
+      "delete": {
+        "$ref": "./resources/notes/{id}/DELETE.json"
+      }
+    },
+    "/notes/search": {
+      "post": {
+        "$ref": "./resources/notes/search/POST.json"
+      }
+    }
+  },
+  "definitions": {
+    "NoteRequest": {
+      "$ref": "./models/NoteRequest.json"
+    },
+    "NoteResponse": {
+      "$ref": "./models/NoteResponse.json"
+    },
+    "NotesListResponse": {
+      "$ref": "./models/NotesListResponse.json"
+    },
+    "SearchRequest": {
+      "$ref": "./models/SearchRequest.json"
+    },
+    "SearchResponse": {
+      "$ref": "./models/SearchResponse.json"
+    },
+    "ErrorResponse": {
+      "$ref": "./models/ErrorResponse.json"
+    }
+  }
+} 

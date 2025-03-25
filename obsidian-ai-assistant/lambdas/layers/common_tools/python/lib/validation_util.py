@@ -4,26 +4,46 @@ Validation utility functions for Lambda functions.
 import json
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
+from lib import ValidationError
 
 
-def validate_required_fields(data: Dict[str, Any], required_fields: List[str]) -> Tuple[bool, Optional[str]]:
+def validate_required_fields(data: Dict[str, Any], required_fields: List[str]) -> bool:
     """
-    Validate that all required fields are present in the data.
-
+    Validate that all required fields are present in the data dictionary.
+    
     Args:
-        data (dict): Data to validate
-        required_fields (list): List of required field names
-
+        data: The data dictionary to validate
+        required_fields: List of required field names
+        
     Returns:
-        tuple: (is_valid, error_message)
+        bool: True if all required fields are present, False otherwise
     """
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return False, f"Missing required fields: {', '.join(missing_fields)}"
-    return True, None
+    try:
+        # Check if data is a dictionary
+        if not isinstance(data, dict):
+            raise ValidationError("Input data must be a dictionary")
+
+        # Check each required field
+        missing_fields = []
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                missing_fields.append(field)
+
+        # If any fields are missing, raise ValidationError
+        if missing_fields:
+            raise ValidationError(f"Missing required fields: {', '.join(missing_fields)}")
+
+        return True
+
+    except ValidationError:
+        # Re-raise ValidationError as is
+        raise
+    except Exception as e:
+        # Convert other exceptions to ValidationError
+        raise ValidationError(f"Validation error: {str(e)}") 
 
 
-def validate_field_type(data: Dict[str, Any], field: str, expected_type: type) -> Tuple[bool, Optional[str]]:
+def validate_field_type(data: Dict[str, Any], field: str, expected_type: type) -> bool:
     """
     Validate that a field is of the expected type.
 
@@ -33,18 +53,27 @@ def validate_field_type(data: Dict[str, Any], field: str, expected_type: type) -
         expected_type (type): Expected type
 
     Returns:
-        tuple: (is_valid, error_message)
+        bool: True if validation passes
+
+    Raises:
+        ValidationError: If validation fails
     """
-    if field not in data:
-        return True, None  # Skip validation if field is not present
+    try:
+        if field not in data:
+            return True  # Skip validation if field is not present
 
-    value = data[field]
-    if not isinstance(value, expected_type):
-        return False, f"Field '{field}' must be of type {expected_type.__name__}"
-    return True, None
+        value = data[field]
+        if not isinstance(value, expected_type):
+            raise ValidationError(f"Field '{field}' must be of type {expected_type.__name__}")
+        return True
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise ValidationError(f"Validation error: {str(e)}")
 
 
-def validate_string_length(data: Dict[str, Any], field: str, min_length: int = 0, max_length: Optional[int] = None) -> Tuple[bool, Optional[str]]:
+def validate_string_length(data: Dict[str, Any], field: str, min_length: int = 0, max_length: Optional[int] = None) -> bool:
     """
     Validate that a string field has a length within the specified range.
 
@@ -55,25 +84,34 @@ def validate_string_length(data: Dict[str, Any], field: str, min_length: int = 0
         max_length (int, optional): Maximum length
 
     Returns:
-        tuple: (is_valid, error_message)
+        bool: True if validation passes
+
+    Raises:
+        ValidationError: If validation fails
     """
-    if field not in data or data[field] is None:
-        return True, None  # Skip validation if field is not present
+    try:
+        if field not in data or data[field] is None:
+            return True  # Skip validation if field is not present
 
-    value = data[field]
-    if not isinstance(value, str):
-        return False, f"Field '{field}' must be a string"
+        value = data[field]
+        if not isinstance(value, str):
+            raise ValidationError(f"Field '{field}' must be a string")
 
-    if len(value) < min_length:
-        return False, f"Field '{field}' must be at least {min_length} characters long"
+        if len(value) < min_length:
+            raise ValidationError(f"Field '{field}' must be at least {min_length} characters long")
 
-    if max_length is not None and len(value) > max_length:
-        return False, f"Field '{field}' must be at most {max_length} characters long"
+        if max_length is not None and len(value) > max_length:
+            raise ValidationError(f"Field '{field}' must be at most {max_length} characters long")
 
-    return True, None
+        return True
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise ValidationError(f"Validation error: {str(e)}")
 
 
-def validate_numeric_range(data: Dict[str, Any], field: str, min_value: Optional[Union[int, float]] = None, max_value: Optional[Union[int, float]] = None) -> Tuple[bool, Optional[str]]:
+def validate_numeric_range(data: Dict[str, Any], field: str, min_value: Optional[Union[int, float]] = None, max_value: Optional[Union[int, float]] = None) -> bool:
     """
     Validate that a numeric field is within the specified range.
 
@@ -84,25 +122,34 @@ def validate_numeric_range(data: Dict[str, Any], field: str, min_value: Optional
         max_value (int/float, optional): Maximum value
 
     Returns:
-        tuple: (is_valid, error_message)
+        bool: True if validation passes
+
+    Raises:
+        ValidationError: If validation fails
     """
-    if field not in data or data[field] is None:
-        return True, None  # Skip validation if field is not present
+    try:
+        if field not in data or data[field] is None:
+            return True  # Skip validation if field is not present
 
-    value = data[field]
-    if not isinstance(value, (int, float)):
-        return False, f"Field '{field}' must be a number"
+        value = data[field]
+        if not isinstance(value, (int, float)):
+            raise ValidationError(f"Field '{field}' must be a number")
 
-    if min_value is not None and value < min_value:
-        return False, f"Field '{field}' must be at least {min_value}"
+        if min_value is not None and value < min_value:
+            raise ValidationError(f"Field '{field}' must be at least {min_value}")
 
-    if max_value is not None and value > max_value:
-        return False, f"Field '{field}' must be at most {max_value}"
+        if max_value is not None and value > max_value:
+            raise ValidationError(f"Field '{field}' must be at most {max_value}")
 
-    return True, None
+        return True
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise ValidationError(f"Validation error: {str(e)}")
 
 
-def validate_regex(data: Dict[str, Any], field: str, pattern: str) -> Tuple[bool, Optional[str]]:
+def validate_regex(data: Dict[str, Any], field: str, pattern: str) -> bool:
     """
     Validate that a string field matches a regex pattern.
 
@@ -112,22 +159,31 @@ def validate_regex(data: Dict[str, Any], field: str, pattern: str) -> Tuple[bool
         pattern (str): Regex pattern
 
     Returns:
-        tuple: (is_valid, error_message)
+        bool: True if validation passes
+
+    Raises:
+        ValidationError: If validation fails
     """
-    if field not in data or data[field] is None:
-        return True, None  # Skip validation if field is not present
+    try:
+        if field not in data or data[field] is None:
+            return True  # Skip validation if field is not present
 
-    value = data[field]
-    if not isinstance(value, str):
-        return False, f"Field '{field}' must be a string"
+        value = data[field]
+        if not isinstance(value, str):
+            raise ValidationError(f"Field '{field}' must be a string")
 
-    if not re.match(pattern, value):
-        return False, f"Field '{field}' does not match the required pattern"
+        if not re.match(pattern, value):
+            raise ValidationError(f"Field '{field}' does not match the required pattern")
 
-    return True, None
+        return True
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise ValidationError(f"Validation error: {str(e)}")
 
 
-def validate_enum(data: Dict[str, Any], field: str, allowed_values: List[Any]) -> Tuple[bool, Optional[str]]:
+def validate_enum(data: Dict[str, Any], field: str, allowed_values: List[Any]) -> bool:
     """
     Validate that a field's value is one of the allowed values.
 
@@ -137,16 +193,25 @@ def validate_enum(data: Dict[str, Any], field: str, allowed_values: List[Any]) -
         allowed_values (list): List of allowed values
 
     Returns:
-        tuple: (is_valid, error_message)
+        bool: True if validation passes
+
+    Raises:
+        ValidationError: If validation fails
     """
-    if field not in data or data[field] is None:
-        return True, None  # Skip validation if field is not present
+    try:
+        if field not in data or data[field] is None:
+            return True  # Skip validation if field is not present
 
-    value = data[field]
-    if value not in allowed_values:
-        return False, f"Field '{field}' must be one of: {', '.join(map(str, allowed_values))}"
+        value = data[field]
+        if value not in allowed_values:
+            raise ValidationError(f"Field '{field}' must be one of: {', '.join(map(str, allowed_values))}")
 
-    return True, None
+        return True
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise ValidationError(f"Validation error: {str(e)}")
 
 
 def validate_json_string(json_string: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:

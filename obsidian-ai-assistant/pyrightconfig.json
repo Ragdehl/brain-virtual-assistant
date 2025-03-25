@@ -1,0 +1,6 @@
+{
+    "extraPaths": [
+        "./lambdas/layers/common_tools/python"
+    ],
+    "reportMissingImports": true
+} 

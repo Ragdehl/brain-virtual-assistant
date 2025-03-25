@@ -1,0 +1,90 @@
+{
+  "resourcePath": "/notes",
+  "httpMethod": "GET",
+  "description": "List notes with optional filtering and pagination",
+  "operationId": "listNotes",
+  "produces": ["application/json"],
+  "parameters": [
+    {
+      "name": "limit",
+      "in": "query",
+      "description": "Maximum number of notes to return",
+      "required": false,
+      "type": "integer",
+      "default": 20,
+      "minimum": 1,
+      "maximum": 100
+    },
+    {
+      "name": "nextToken",
+      "in": "query",
+      "description": "Token for pagination",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "name": "folder",
+      "in": "query",
+      "description": "Filter notes by folder",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "name": "tags",
+      "in": "query",
+      "description": "Filter notes by tags (comma-separated)",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "name": "sortBy",
+      "in": "query",
+      "description": "Sort field",
+      "required": false,
+      "type": "string",
+      "enum": ["createdAt", "updatedAt", "title"],
+      "default": "updatedAt"
+    },
+    {
+      "name": "sortOrder",
+      "in": "query",
+      "description": "Sort order",
+      "required": false,
+      "type": "string",
+      "enum": ["asc", "desc"],
+      "default": "desc"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Successful operation",
+      "schema": {
+        "$ref": "../../models/NotesListResponse.json"
+      }
+    },
+    "400": {
+      "description": "Invalid query parameters",
+      "schema": {
+        "$ref": "../../models/ErrorResponse.json"
+      }
+    },
+    "401": {
+      "description": "Unauthorized",
+      "schema": {
+        "$ref": "../../models/ErrorResponse.json"
+      }
+    },
+    "500": {
+      "description": "Server error",
+      "schema": {
+        "$ref": "../../models/ErrorResponse.json"
+      }
+    }
+  },
+  "security": [
+    {
+      "CognitoAuth": []
+    }
+  ],
+  "lambdaFunction": "list_notes"
+} 

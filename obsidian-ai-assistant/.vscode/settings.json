@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "./lambdas/layers/common_tools/python"
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    }
+}

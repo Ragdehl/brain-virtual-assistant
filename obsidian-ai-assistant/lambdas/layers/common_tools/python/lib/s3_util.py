@@ -7,6 +7,11 @@ from typing import Any, Dict, Optional, Union
 import boto3
 from botocore.exceptions import ClientError
 
+from lib import (
+    NotFoundError,
+    ServerError,
+)
+
 
 class S3Util:
     """
@@ -52,9 +57,20 @@ class S3Util:
 
         Returns:
             str: Object content
+
+        Raises:
+            NotFoundError: If the object is not found
+            ServerError: If there's an error accessing S3 or reading the content
         """
-        response = self.get_object(key)
-        return response["Body"].read().decode("utf-8")
+        try:
+            response = self.get_object(key)
+            return response["Body"].read().decode("utf-8")
+        except FileNotFoundError:
+            raise NotFoundError(f"Object not found: {key}")
+        except ClientError as e:
+            raise ServerError(f"Error accessing S3: {str(e)}")
+        except Exception as e:
+            raise ServerError(f"Unexpected error: {str(e)}")
 
     def put_object(
         self,
@@ -102,12 +118,20 @@ class S3Util:
 
         Returns:
             dict: Response from S3
+
+        Raises:
+            NotFoundError: If the object is not found
+            ServerError: If there's an error accessing S3
         """
         try:
             response = self.s3.delete_object(Bucket=self.bucket_name, Key=key)
             return response
-        except ClientError:
-            raise
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                raise NotFoundError(f"Object not found: {key}")
+            raise ServerError(f"Error accessing S3: {str(e)}")
+        except Exception as e:
+            raise ServerError(f"Unexpected error: {str(e)}")
 
     def list_objects(
         self,
