@@ -17,7 +17,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../../lambdas/layers
 # Import common utilities
 from lib import (  # type: ignore
     api_handler,
-    ValidationError
+    ValidationError,
+    DynamoDBUtil
 )
 
 # Import shared models and utilities
@@ -25,7 +26,6 @@ from lambdas.models.note import NoteListResponse, NoteResponse, SearchNotesReque
 from lambdas.utils.response import format_error, format_response, format_validation_error
 
 # Initialize AWS clients
-dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
 
 # Get environment variables
@@ -33,7 +33,7 @@ table_name = os.environ.get('DYNAMODB_TABLE', 'obsidian-ai-assistant-notes-dev')
 embedding_function_name = os.environ.get('EMBEDDING_FUNCTION', 'obsidian-ai-assistant-generate-embeddings-dev')
 
 # Initialize resources
-table = dynamodb.Table(table_name)
+dynamodb_util = DynamoDBUtil(table_name)
 
 
 @api_handler(
@@ -53,49 +53,36 @@ def lambda_handler(user_id: str, body: Dict[str, Any], context: Any) -> Dict[str
     Returns:
         A formatted API Gateway response
     """
-    try:
-        # Parse request body
-        try:
-            search_request = SearchNotesRequest(**body)
-        except Exception as e:
-            raise ValidationError(f"Invalid request body: {str(e)}")
+    # Parse and validate request body using the method that handles exceptions internally
+    search_request = SearchNotesRequest.from_request_body(body)
 
-        # Validate search type
-        if search_request.searchType not in ['text', 'semantic']:
-            raise ValidationError("Invalid search type. Must be 'text' or 'semantic'")
-
-        # Perform the search
-        if search_request.searchType == 'text':
-            notes = perform_text_search(
-                user_id,
-                search_request.query,
-                search_request.tags,
-                search_request.fromDate,
-                search_request.toDate,
-                search_request.limit
-            )
-        else:  # semantic search
-            notes = perform_semantic_search(
-                user_id,
-                search_request.query,
-                search_request.tags,
-                search_request.fromDate,
-                search_request.toDate,
-                search_request.limit
-            )
-
-        # Format the response
-        note_list_response = NoteListResponse(
-            notes=[NoteResponse.from_dynamodb_item(note) for note in notes],
-            pagination={"nextToken": None}  # Pagination not supported for search yet
+    # Perform the search
+    if search_request.searchType == 'text':
+        notes = perform_text_search(
+            user_id,
+            search_request.query,
+            search_request.tags,
+            search_request.fromDate,
+            search_request.toDate,
+            search_request.limit
+        )
+    else:  # semantic search
+        notes = perform_semantic_search(
+            user_id,
+            search_request.query,
+            search_request.tags,
+            search_request.fromDate,
+            search_request.toDate,
+            search_request.limit
         )
 
-        return note_list_response.model_dump()
+    # Format the response
+    note_list_response = NoteListResponse(
+        notes=[NoteResponse.from_dynamodb_item(note) for note in notes],
+        pagination={"nextToken": None}  # Pagination not supported for search yet
+    )
 
-    except Exception as e:
-        # Log the error for debugging
-        print(f"Error searching notes: {str(e)}")
-        return format_error(str(e))
+    return note_list_response.model_dump()
 
 
 def perform_text_search(
@@ -154,9 +141,8 @@ def perform_text_search(
             scan_params['FilterExpression'] += ' AND createdAt <= :toDate'
             scan_params['ExpressionAttributeValues'][':toDate'] = to_date
 
-    # Scan the table
-    response = table.scan(**scan_params)
-    notes = response.get('Items', [])
+    # Scan the table using DynamoDBUtil
+    notes = dynamodb_util.scan(scan_params)
 
     # Sort by relevance (simple contains check for now)
     def relevance_score(note):
@@ -227,9 +213,8 @@ def perform_semantic_search(
             scan_params['FilterExpression'] += ' AND createdAt <= :toDate'
             scan_params['ExpressionAttributeValues'][':toDate'] = to_date
 
-    # Scan the table
-    response = table.scan(**scan_params)
-    notes = response.get('Items', [])
+    # Scan the table using DynamoDBUtil
+    notes = dynamodb_util.scan(scan_params)
 
     # Calculate cosine similarity for each note
     notes_with_scores = []
