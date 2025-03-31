@@ -1,3 +1,6 @@
+---
+Status: My Statis
+---
 # Docker Setup
 
 This document outlines the Docker setup for local development and testing of the Obsidian AI Assistant project.

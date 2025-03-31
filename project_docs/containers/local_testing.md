@@ -1,3 +1,6 @@
+---
+Status: Your Stus
+---
 # Local Testing Guide
 
 This document outlines the process for testing Lambda functions locally in the Obsidian AI Assistant project.
